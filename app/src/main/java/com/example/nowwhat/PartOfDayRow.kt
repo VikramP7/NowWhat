@@ -3,8 +3,6 @@ package com.example.nowwhat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,7 +17,6 @@ import androidx.compose.ui.unit.dp
 fun PartOfDayRow(
     hourSlots: List<HourSlot?>,
     label: String,
-    hourOffset: Int,
     onClick: (Int) -> Unit, // callback
     modifier: Modifier = Modifier
 ) {
@@ -37,7 +34,7 @@ fun PartOfDayRow(
         hourSlots.forEachIndexed { index, hourSlot ->
             HourBox(
                 hourSlot,
-                onClick = {onClick(hourOffset+index)}
+                onClick = {onClick(index)}
             )
         }
     }
@@ -55,8 +52,8 @@ fun PartOfDayRowPreview() {
     val testHour3 = HourSlot()
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        PartOfDayRow(label = "morning", hourOffset = 4, hourSlots = listOf(testHour0, testHour1, testHour2, testHour3, testHour0, testHour2), onClick = {})
-        PartOfDayRow(label = "Day", hourOffset = 10, hourSlots = listOf(testHour1, testHour2, testHour3, testHour0, testHour2, testHour0), onClick = {})
-        PartOfDayRow(label = "Evening", hourOffset = 16, hourSlots = listOf(testHour3, testHour0, testHour2, testHour2, testHour3, testHour0), onClick = {})
+        PartOfDayRow(label = "morning 4-10", hourSlots = listOf(testHour0, testHour1, testHour2, testHour3, testHour0, testHour2), onClick = {})
+        PartOfDayRow(label = "Day", hourSlots = listOf(testHour1, testHour2, testHour3, testHour0, testHour2, testHour0), onClick = {})
+        PartOfDayRow(label = "Evening", hourSlots = listOf(testHour3, testHour0, testHour2, testHour2, testHour3, testHour0), onClick = {})
     }
 }
