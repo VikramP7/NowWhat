@@ -4,56 +4,116 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Date
+import kotlin.collections.emptyList
+import kotlin.time.Duration.Companion.days
+import kotlin.time.ExperimentalTime
+import java.time.Instant
 
 class NowWhatViewModel(application: Application) : AndroidViewModel(application) {
-    private val dao = AppDatabase.getDatabase(application).hourEntryDao()
-    public val entries: Flow<List<HourEntry>> = dao.getAll()
 
-    val activities: List<Activity> = listOf(
-    Activity("Work", 0xFF4CAF50.toInt(), id = 1),
-    Activity("Sleep", 0xFF3F51B5.toInt(), id = 2),
-    Activity("Gym", 0xFFFF9800.toInt(), id = 3),
-    Activity("Social", 0xFFE91E63.toInt(), id = 4),
-    Activity("Dating", 0xFFF48FB1.toInt(), id = 5)
-    )
-
-    private val sleep = activities[1]
-    private val work = activities[0]
-    private val gym = activities[2]
-    private val social = activities[3]
-
-    val days: List<Day> = listOf(
-        Day(date = "Today · Thu Jun 19", hourRows = listOf(
-            listOf(HourSlot(sleep, sleep), HourSlot(gym, gym), HourSlot(work, work),
-                HourSlot(work, work), HourSlot(work, work), HourSlot(work, social)),
-            listOf(HourSlot(work, work), HourSlot(work, work), HourSlot(work, work),
-                HourSlot(work, gym), HourSlot(gym, gym), HourSlot(social, social)),
-            listOf(HourSlot(social, social), HourSlot(social, social), HourSlot(planned = social),
-                HourSlot(), HourSlot(), HourSlot()),
-            listOf(HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep),
-                HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep))
-        )),
-        Day(date = "Yesterday · Wed Jun 18", hourRows = listOf(
-            listOf(HourSlot(sleep, sleep), HourSlot(sleep, gym), HourSlot(gym, gym),
-                HourSlot(work, work), HourSlot(work, work), HourSlot(work, work)),
-            listOf(HourSlot(work, work), HourSlot(work, social), HourSlot(social, social),
-                HourSlot(work, work), HourSlot(work, work), HourSlot(gym, gym)),
-            listOf(HourSlot(social, social), HourSlot(actual = social), HourSlot(planned = gym),
-                HourSlot(social, social), HourSlot(sleep, sleep), HourSlot(sleep, sleep)),
-            listOf(HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep),
-                HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep))
-        ))
-    )
-
-    public fun addEntry(didWhat: String, nowWhat: String) {
+    init {
         viewModelScope.launch {
-            val entry = HourEntry(
-                timestamp = System.currentTimeMillis(),
-                didWhat=didWhat,
-                nowWhat=nowWhat
+            val existing = activityDao.getAll().first()
+            if (existing.isEmpty()) {
+                activityDao.insert(Activity("Work", 0xFF4CAF50.toInt()))
+                activityDao.insert(Activity("Sleep", 0xFF3F51B5.toInt()))
+                activityDao.insert(Activity("Gym", 0xFFFF9800.toInt()))
+                activityDao.insert(Activity("Social", 0xFFE91E63.toInt()))
+                activityDao.insert(Activity("Dating", 0xFFF48FB1.toInt()))
+            }
+        }
+    }
+
+    private val hourEntryDao = AppDatabase.getDatabase(application).hourEntryDao()
+    private val entriesFlow: Flow<List<HourEntry>> = hourEntryDao.getAll()
+
+    private val activityDao = AppDatabase.getDatabase(application).activityDao()
+    private val activitiesFlow: Flow<List<Activity>> = activityDao.getAll()
+
+    private fun transformIntoDays(entries: List<HourEntry>, activities: List<Activity>): List<Day> {
+        if (entries.isEmpty()) return emptyList()
+
+        // Build a lookup map by activityId to Activity object
+        val activityMap: Map<Long, Activity> = activities.associateBy { it.id }
+
+        // Group entries by date
+        // Convert each timestamp to a LocalDate
+        val grouped: Map<LocalDate, List<HourEntry>> = entries.groupBy { entry ->
+            Instant.ofEpochMilli(entry.timestamp)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+        }
+
+        // For each date, build a Day object
+        val formatter = DateTimeFormatter.ofPattern("EEEE · MMM d")
+
+        return grouped.entries.sortedByDescending { it.key }.map { (date, dayEntries) ->
+
+            // Build 24-hour slots, one per hour, all starting null
+            val hourSlots = arrayOfNulls<HourSlot>(24)
+
+            // Place each entry into the correct hour slot
+            dayEntries.forEach { entry ->
+                val hour = Instant.ofEpochMilli(entry.timestamp)
+                    .atZone(ZoneId.systemDefault())
+                    .hour
+
+                hourSlots[hour] = HourSlot(
+                    planned = entry.plannedActivityId?.let { activityMap[it] },
+                    actual = entry.actualActivityId?.let { activityMap[it] }
+                )
+            }
+
+            // Slice into 4 bands
+            // Morning(6-11), Day(12-17), Evening(18-23), Night(0-5)
+            val rows = listOf(
+                hourSlots.slice(6..11),
+                hourSlots.slice(12..17),
+                hourSlots.slice(18..23),
+                hourSlots.slice(0..5)
             )
-            dao.insert(entry)
+
+            Day(date = date.format(formatter), hourRows = rows)
+        }
+    }
+
+    val days = combine(entriesFlow, activitiesFlow) { entries, activities ->
+        transformIntoDays(entries, activities)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    val activities = activitiesFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    fun logPlannedActivity(timestamp: Long, activityId: Long) {
+        viewModelScope.launch {
+            hourEntryDao.insert(
+                HourEntry(timestamp = timestamp, plannedActivityId = activityId, actualActivityId = null)
+            )
+        }
+    }
+
+    fun logActualActivity(timestamp: Long, activityId: Long) {
+        viewModelScope.launch {
+            hourEntryDao.insert(
+                HourEntry(timestamp = timestamp, plannedActivityId = null, actualActivityId = activityId)
+            )
         }
     }
 }

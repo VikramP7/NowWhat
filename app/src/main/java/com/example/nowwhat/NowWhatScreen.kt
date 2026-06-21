@@ -38,6 +38,10 @@ fun NowWhatScreen(
     modifier: Modifier = Modifier,
     viewModel: NowWhatViewModel = viewModel()
 ) {
+
+    val days by viewModel.days.collectAsState()
+    val activities by viewModel.activities.collectAsState()
+
     Scaffold(
         modifier = modifier,
         topBar = { TopBar(onClick = {}) }
@@ -45,13 +49,27 @@ fun NowWhatScreen(
         Column(modifier = Modifier.padding(innerPadding)) {
             HoursView(
                 modifier = Modifier.weight(1f),
-                days = viewModel.days,
+                days = days,
                 onClick = { _, _ -> }
             )
             EntryPanel(
-                activityList = viewModel.activities,
-                onPlannedClick = {},
-                onActualClick = {},
+                activityList = activities,
+                onPlannedClick = { activityIndex ->
+                    val activity = activities[activityIndex]
+                    val nextHour = System.currentTimeMillis().let { now ->
+                        // Truncate to current hour, then add one hour
+                        (now / 3_600_000 + 1) * 3_600_000
+                    }
+                    viewModel.logPlannedActivity(nextHour, activity.id)
+                },
+                onActualClick = { activityIndex ->
+                    val activity = activities[activityIndex]
+                    val lastHour = System.currentTimeMillis().let { now ->
+                        // Truncate to current hour
+                        (now / 3_600_000) * 3_600_000
+                    }
+                    viewModel.logActualActivity(lastHour, activity.id)
+                },
                 onEditClick = {}
             )
         }
@@ -97,24 +115,6 @@ fun NowWhatScreenPreview() {
                 HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep))
         ))
     )
-
-    Scaffold(
-        topBar = { TopBar(onClick = {}) }
-    ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
-            HoursView(
-                modifier = Modifier.weight(1f),
-                days = days,
-                onClick = { _, _ -> }
-            )
-            EntryPanel(
-                activityList = activities,
-                onPlannedClick = {},
-                onActualClick = {},
-                onEditClick = {}
-            )
-        }
-    }
 }
 
 

@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             NowWhatTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    HourTrackerScreen(modifier = Modifier.padding(innerPadding))
+                    NowWhatScreen(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
