@@ -1,8 +1,6 @@
-*<div align="right"> Vikram Procter | June 19, 2026 </div>*
+*<div align="right"> Vikram Procter | June 21, 2026 </div>*
 
 # What Now? - README
-
-
 
 ## Project Overview
 ![Image app main screen](./pics/)  
@@ -19,12 +17,12 @@ Instead of free-text journaling, you log each hour by tapping a **preset activit
 The main screen, top to bottom:
 
 - **Top bar** — the app name, and a hamburger menu (top right) that opens Settings.
-- **Hours view** (scrollable) — one section per day. Each day has **four rows**: Night, Morning, Day, and Evening. Each row holds one **box per hour** in that band. Every box is:
+- **Hours view** (scrollable) — one section per day. Each day has **four rows**: Morning, Day, Evening, and Night. Each row holds one **box per hour** in that band. Every box is:
   - **outlined** in the colour of the activity you *planned* for that hour, and
   - **filled** with the colour of the activity you *actually* did.
 
   So a box outlined amber but filled teal means "planned to gym, ended up working." Outline-only means planned but not yet done; an empty box means nothing is logged yet.
-- **Entry panel** (bottom) — defaults to logging the *next* hour from the preset buttons. Tap any box above to edit that hour instead. Includes a **colour legend** mapping each colour to its activity.
+- **Entry panel** (bottom) — shows the currently selected time slot. Displays preset buttons in two rows: "What's planned?" and "What's happened?". Tap any box in the hours view to select that hour for editing. Includes a **colour legend** mapping each colour to its activity.
 
 ## How it works (planned)
 
@@ -34,32 +32,37 @@ Hourly **notifications** fire on the hour (using exact alarms) prompting you to 
 
 - **Kotlin** + **Jetpack Compose** (declarative UI)
 - **Room** (SQLite) for persistence, processed via **KSP**
-- **ViewModel** + **Kotlin Flow** for reactive state
-- **AlarmManager** (exact alarms) for on-the-hour notifications
+- **ViewModel** + **Kotlin Flow** + **StateFlow** for reactive state
+- **AlarmManager** (exact alarms) for on-the-hour notifications (planned)
 - Built in Android Studio; tested on a physical device over wireless ADB
 
 ## Architecture
 
-Data flows in one direction: **Entity → DAO → Database → ViewModel → Composable**. Reads are exposed as reactive `Flow`s, so the UI updates itself whenever the data changes.
+Data flows in one direction: **Entity → DAO → Database → ViewModel → Composable**. Reads are exposed as reactive `Flow`s and `StateFlow`s, so the UI updates itself whenever the data changes. Events flow upward via callback lambdas (state hoisting).
 
 UI component tree:
 
-- `HourTrackerScreen` — owns the top bar and splits the screen into the two sections
-  - `TopBar` — title + hamburger menu
+- `NowWhatScreen` — owns the Scaffold, TopBar, and splits the screen into two sections
+  - `TopBar` — title + hamburger menu (placeholder icon)
   - `HoursView` — scrollable `LazyColumn` of days
     - `DaySection` — date label + four part-of-day rows
       - `PartOfDayRow` — band label + a row of boxes
-        - `HourBox` — one hour: outline = planned colour, fill = actual colour; tappable to edit
-  - `EntryPanel` — bottom section for logging the next hour
-    - `PresetButton` — one button per preset activity
-    - `Legend` — colour → activity key
+        - `HourBox` — one hour: outline = planned colour, fill = actual colour; tappable to select
+  - `EntryPanel` — bottom section showing selected time and logging controls
+    - `PresetButton` — one button per preset activity (outlined, coloured)
+    - `ActivityLegend` — colour → activity key
 
-## Data model (in transition)
+## Data model
 
-Currently a single free-text table. Being redesigned to:
+Two tables:
 
-- **Activity** — a preset: a name and a colour.
-- **HourEntry** — one hour: a timestamp, a *planned* Activity, and an *actual* Activity (both optional).
+- **Activity** (`activities`) — a preset: a name, a colour (ARGB Int), and an auto-generated ID.
+- **HourEntry** (`hour_entries`) — one hour: a timestamp (epoch millis, truncated to the hour), a *planned* Activity ID, and an *actual* Activity ID (both nullable).
+
+Supporting UI classes (not persisted):
+
+- **HourSlot** — holds a planned and an actual `Activity?`, used to pass data to `HourBox`.
+- **Day** — holds a date string, a `LocalDate`, and four lists of `HourSlot?` (one per time band), used to pass data to `DaySection`.
 
 ## Status
 
@@ -67,15 +70,21 @@ Done:
 
 - Development environment installed and project created
 - Room toolchain wired up (Room 2.8.4 + KSP)
-- Data layer: `HourEntry` entity, `HourEntryDao`, `AppDatabase` (singleton), `HourViewModel`
-- A working v1 screen: text-field entry with a persistent, reactive list
+- Data layer: `Activity` entity + `ActivityDao`, `HourEntry` entity (preset-based with planned/actual activity IDs) + `HourEntryDao` (with upsert pattern), `AppDatabase` (singleton with destructive migration fallback)
+- `NowWhatViewModel` with `combine` to merge entries and activities Flows, `transformIntoDays` to group entries by date and slice into time bands, `MutableStateFlow` for selected timestamp, and log functions with check-then-update-or-insert logic
+- Full UI component tree built bottom-up with Compose: `HourBox` → `PartOfDayRow` → `DaySection` → `HoursView` → `NowWhatScreen`, plus `TopBar`, `EntryPanel`, `PresetButton`, and `ActivityLegend`
+- Hour selection: tapping any HourBox sets the selected timestamp, EntryPanel updates to show the selected time slot
+- Logging: tapping a preset button sets the planned or actual activity for the selected hour, with upsert to avoid duplicates
+- Default activities seeded on first launch (Work, Sleep, Gym, Social, Dating)
+- App runs on physical device over wireless ADB
 
 ## TODO
 
-- [ ] Redesign the data model to the preset-based schema (an `Activity` table; planned + actual activity per hour)
-- [ ] Build the new UI scaffolding bottom-up with stand-in data and `@Preview`: `HourBox` → `PartOfDayRow` → `DaySection` → `HoursView`, plus `TopBar`, `EntryPanel`, `PresetButton`, and `Legend`
-- [ ] Wire the scaffolded UI to the ViewModel and Room
-- [ ] Settings screen: configure the time bands (Night / Morning / Day / Evening boundaries) and manage preset activities and their colours
+- [x] Redesign the data model to the preset-based schema (an `Activity` table; planned + actual activity per hour)
+- [x] Build the new UI scaffolding bottom-up with stand-in data and `@Preview`: `HourBox` → `PartOfDayRow` → `DaySection` → `HoursView`, plus `TopBar`, `EntryPanel`, `PresetButton`, and `Legend`
+- [x] Wire the scaffolded UI to the ViewModel and Room
+- [ ] Settings screen: configure the time bands (Night / Morning / Day / Evening boundaries) and manage preset activities (add, edit, delete) and their colours — accessible from the hamburger menu and the Edit button in EntryPanel
+- [ ] Visual polish: rounded corners on HourBox, gradient/glow borders, proper Material icons (clock, hamburger), consistent spacing and typography, app theming
 - [ ] Hourly notification engine: exact alarms + reschedule-on-fire + boot receiver + `POST_NOTIFICATIONS` permission + notification channel (plus inline direct-reply if feasible)
 - [ ] CSV export via the system share sheet
 
