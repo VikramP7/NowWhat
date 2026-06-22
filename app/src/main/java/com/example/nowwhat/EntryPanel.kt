@@ -19,26 +19,42 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
+
 
 
 @Composable
 fun EntryPanel(
     activityList: List<Activity>,
+    selectedTimestamp: Long,
     onPlannedClick: (activityIndex: Int) -> Unit, // callback
     onActualClick: (activityIndex: Int) -> Unit,
     onEditClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val zone = ZoneId.systemDefault()
+    val dateTime = Instant.ofEpochMilli(selectedTimestamp)
+        .atZone(zone)
+
+    val dayFormatter = DateTimeFormatter.ofPattern("MMM d")
+    val hourFormatter = DateTimeFormatter.ofPattern("h:mm a")
+
+    val dayText = dateTime.format(dayFormatter)
+    val startTime = dateTime.format(hourFormatter)
+    val endTime = dateTime.plusHours(1).format(hourFormatter)
+
     val editActivity = Activity(name = "Edit+", colour = 0xffcccccc.toInt())
 
     Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         Row() {
             Text("clockIcon")
-            Text(text = "Last Hour · 5:00-6:00")
+            Text(text = " ${startTime} - ${endTime} · ${dayText}")
         }
-        Text(text = "What Will you do?")
+        Text(text = "What's planned?")
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)){
             itemsIndexed(activityList, key = {_, activity -> activity.id}) {activityIndex, activity ->
                 PresetButton(
@@ -56,11 +72,8 @@ fun EntryPanel(
 
         Spacer(Modifier.height(8.dp))
 
-        Row() {
-            Text("clockIcon")
-            Text(text = "Last Hour · 4:00-5:00")
-        }
-        Text(text = "What Will you do?")
+
+        Text(text = "What's happened?")
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)){
             itemsIndexed(activityList, key = {_, activity -> activity.id}) {activityIndex, activity ->
                 PresetButton(
@@ -96,6 +109,7 @@ fun EntryPanelPreview() {
 
     EntryPanel(
         activityList = activities,
+        selectedTimestamp = 0,
         onPlannedClick = {},
         onActualClick = {},
         onEditClick = {}

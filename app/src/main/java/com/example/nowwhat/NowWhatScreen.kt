@@ -42,6 +42,8 @@ fun NowWhatScreen(
     val days by viewModel.days.collectAsState()
     val activities by viewModel.activities.collectAsState()
 
+    val selectedTimestamp by viewModel.selectedTimestamp.collectAsState()
+
     Scaffold(
         modifier = modifier,
         topBar = { TopBar(onClick = {}) }
@@ -50,25 +52,20 @@ fun NowWhatScreen(
             HoursView(
                 modifier = Modifier.weight(1f),
                 days = days,
-                onClick = { _, _ -> }
+                onClick = { dayIndex, hourIndex ->
+                    viewModel.selectHour(dayIndex, hourIndex)
+                }
             )
             EntryPanel(
                 activityList = activities,
+                selectedTimestamp = selectedTimestamp,
                 onPlannedClick = { activityIndex ->
                     val activity = activities[activityIndex]
-                    val nextHour = System.currentTimeMillis().let { now ->
-                        // Truncate to current hour, then add one hour
-                        (now / 3_600_000 + 1) * 3_600_000
-                    }
-                    viewModel.logPlannedActivity(nextHour, activity.id)
+                    viewModel.logPlannedActivity( activity.id)
                 },
                 onActualClick = { activityIndex ->
                     val activity = activities[activityIndex]
-                    val lastHour = System.currentTimeMillis().let { now ->
-                        // Truncate to current hour
-                        (now / 3_600_000) * 3_600_000
-                    }
-                    viewModel.logActualActivity(lastHour, activity.id)
+                    viewModel.logActualActivity( activity.id)
                 },
                 onEditClick = {}
             )
@@ -92,29 +89,6 @@ fun NowWhatScreenPreview() {
     val work = activities[0]
     val gym = activities[2]
     val social = activities[3]
-
-    val days = listOf(
-        Day(date = "Today · Thu Jun 19", hourRows = listOf(
-            listOf(HourSlot(sleep, sleep), HourSlot(gym, gym), HourSlot(work, work),
-                HourSlot(work, work), HourSlot(work, work), HourSlot(work, social)),
-            listOf(HourSlot(work, work), HourSlot(work, work), HourSlot(work, work),
-                HourSlot(work, gym), HourSlot(gym, gym), HourSlot(social, social)),
-            listOf(HourSlot(social, social), HourSlot(social, social), HourSlot(planned = social),
-                HourSlot(), HourSlot(), HourSlot()),
-            listOf(HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep),
-                HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep))
-        )),
-        Day(date = "Yesterday · Wed Jun 18", hourRows = listOf(
-            listOf(HourSlot(sleep, sleep), HourSlot(sleep, gym), HourSlot(gym, gym),
-                HourSlot(work, work), HourSlot(work, work), HourSlot(work, work)),
-            listOf(HourSlot(work, work), HourSlot(work, social), HourSlot(social, social),
-                HourSlot(work, work), HourSlot(work, work), HourSlot(gym, gym)),
-            listOf(HourSlot(social, social), HourSlot(actual = social), HourSlot(planned = gym),
-                HourSlot(social, social), HourSlot(sleep, sleep), HourSlot(sleep, sleep)),
-            listOf(HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep),
-                HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep))
-        ))
-    )
 }
 
 

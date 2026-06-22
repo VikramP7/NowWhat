@@ -37,29 +37,4 @@ fun HoursViewPreview() {
     val sleep = Activity("Sleep", 0xFF3F51B5.toInt())
     val work = Activity("Work", 0xFFFF9800.toInt())
     val social = Activity("Social", 0xFFE91E63.toInt())
-
-    // Rows ordered: Morning, Day, Evening, Night
-    val day1 = Day(date = "Thursday, June 19", hourRows = listOf(
-        listOf(HourSlot(sleep, sleep), HourSlot(gym, gym), HourSlot(work, work),
-            HourSlot(work, work), HourSlot(work, work), HourSlot(work, social)),
-        listOf(HourSlot(work, work), HourSlot(work, work), HourSlot(work, work),
-            HourSlot(work, gym), HourSlot(gym, gym), HourSlot(social, social)),
-        listOf(HourSlot(social, social), HourSlot(social, social), HourSlot(planned = social),
-            HourSlot(), HourSlot(), HourSlot()),
-        listOf(HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep),
-            HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep))
-    ))
-
-    val day2 = Day(date = "Friday, June 20", hourRows = listOf(
-        listOf(HourSlot(sleep, sleep), HourSlot(sleep, gym), HourSlot(gym, gym),
-            HourSlot(work, work), HourSlot(work, work), HourSlot(work, work)),
-        listOf(HourSlot(work, work), HourSlot(work, social), HourSlot(social, social),
-            HourSlot(work, work), HourSlot(work, work), HourSlot(gym, gym)),
-        listOf(HourSlot(social, social), HourSlot(actual = social), HourSlot(planned = gym),
-            HourSlot(), HourSlot(), HourSlot()),
-        listOf(HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep),
-            HourSlot(sleep, sleep), HourSlot(sleep, sleep), HourSlot(sleep, sleep))
-    ))
-
-    HoursView(days = listOf(day1, day2, day1, day2), onClick = { _, _ -> })
 }

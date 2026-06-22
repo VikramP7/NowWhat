@@ -4,7 +4,9 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -21,6 +23,15 @@ import java.time.Instant
 
 class NowWhatViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val hourEntryDao = AppDatabase.getDatabase(application).hourEntryDao()
+    private val entriesFlow: Flow<List<HourEntry>> = hourEntryDao.getAll()
+
+    private val activityDao = AppDatabase.getDatabase(application).activityDao()
+    private val activitiesFlow: Flow<List<Activity>> = activityDao.getAll()
+
+    private val _selectedTimestamp = MutableStateFlow(defaultTimestamp())
+    val selectedTimestamp: StateFlow<Long> = _selectedTimestamp
+
     init {
         viewModelScope.launch {
             val existing = activityDao.getAll().first()
@@ -33,12 +44,6 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
             }
         }
     }
-
-    private val hourEntryDao = AppDatabase.getDatabase(application).hourEntryDao()
-    private val entriesFlow: Flow<List<HourEntry>> = hourEntryDao.getAll()
-
-    private val activityDao = AppDatabase.getDatabase(application).activityDao()
-    private val activitiesFlow: Flow<List<Activity>> = activityDao.getAll()
 
     private fun transformIntoDays(entries: List<HourEntry>, activities: List<Activity>): List<Day> {
         if (entries.isEmpty()) return emptyList()
@@ -83,7 +88,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                 hourSlots.slice(0..5)
             )
 
-            Day(date = date.format(formatter), hourRows = rows)
+            Day(date = date.format(formatter), hourRows = rows, localDate = date)
         }
     }
 
@@ -101,19 +106,54 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
-    fun logPlannedActivity(timestamp: Long, activityId: Long) {
+    fun logPlannedActivity(activityId: Long) {
         viewModelScope.launch {
-            hourEntryDao.insert(
-                HourEntry(timestamp = timestamp, plannedActivityId = activityId, actualActivityId = null)
-            )
+            val timestamp = _selectedTimestamp.value
+            val existing = hourEntryDao.getByTimestamp(timestamp)
+            if (existing != null){
+                hourEntryDao.updatePlanned(timestamp, activityId)
+            }else{
+                hourEntryDao.insert(
+                    HourEntry(timestamp = timestamp, plannedActivityId = activityId, actualActivityId = null)
+                )
+            }
+            //clearSelection()
         }
     }
 
-    fun logActualActivity(timestamp: Long, activityId: Long) {
+    fun logActualActivity(activityId: Long) {
         viewModelScope.launch {
-            hourEntryDao.insert(
-                HourEntry(timestamp = timestamp, plannedActivityId = null, actualActivityId = activityId)
-            )
+            val timestamp = _selectedTimestamp.value
+            val existing = hourEntryDao.getByTimestamp(timestamp)
+            if (existing != null) {
+                hourEntryDao.updateActual(timestamp, activityId)
+            } else {
+                hourEntryDao.insert(
+                    HourEntry(timestamp = timestamp, plannedActivityId = null, actualActivityId = activityId)
+                )
+            }
+            //clearSelection()
         }
+    }
+
+    private fun defaultTimestamp(): Long {
+        // Truncate to current hour
+        return (System.currentTimeMillis() / 3_600_000) * 3_600_000
+    }
+
+    fun selectHour(dayIndex: Int, hourIndex: Int) {
+        val daysList = days.value
+        if (dayIndex in daysList.indices) {
+            val day = daysList[dayIndex]
+            _selectedTimestamp.value = day.localDate
+                .atTime(hourIndex, 0)
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+        }
+    }
+
+    fun clearSelection() {
+        _selectedTimestamp.value = defaultTimestamp()
     }
 }
