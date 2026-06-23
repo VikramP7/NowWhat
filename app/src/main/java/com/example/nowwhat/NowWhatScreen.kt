@@ -36,6 +36,7 @@ fun NowWhatScreen(
                 }
             )
             EntryPanel(
+                modifier = Modifier,
                 activityList = activities,
                 selectedTimestamp = selectedTimestamp,
                 onPlannedClick = { activityIndex ->

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -27,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
 val ACTIVITYCOLOURS: List<Int> = listOf(
@@ -85,7 +87,10 @@ fun ActivitiesSettings(
                     modifier = Modifier.align(Alignment.CenterVertically),
                     onClick = { onRemoveActivity(activity) }
                 ) {
-                    Text("Trash Can")
+                    Icon(
+                        painter = painterResource(R.drawable.ic_delete),
+                        contentDescription = "Trash"
+                    )
                 }
             }
 
@@ -117,7 +122,10 @@ fun ActivitiesSettings(
                     colour = 0xFF4CAF50.toInt()
                 )
             )}) {
-                Text(text = "Add Activity")
+                Icon(
+                    painter = painterResource(R.drawable.ic_add),
+                    contentDescription = "Add"
+                )
             }
         }
     }
