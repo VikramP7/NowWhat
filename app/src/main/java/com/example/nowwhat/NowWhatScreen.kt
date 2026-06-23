@@ -31,10 +31,12 @@ fun NowWhatScreen(
             HoursView(
                 modifier = Modifier.weight(1f),
                 days = days,
+                selectedTimestamp = selectedTimestamp,
                 onClick = { dayIndex, hourIndex ->
                     viewModel.selectHour(dayIndex, hourIndex)
                 }
             )
+
             EntryPanel(
                 modifier = Modifier,
                 activityList = activities,

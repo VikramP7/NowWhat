@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -18,23 +19,27 @@ fun PartOfDayRow(
     hourSlots: List<HourSlot?>,
     label: String,
     onClick: (Int) -> Unit, // callback
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectedHourInRow: Int? = null
 ) {
-    Row(modifier=modifier, horizontalArrangement = Arrangement.spacedBy(5.dp)){
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             textAlign = TextAlign.End,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-                .weight(0.5f)
+                .weight(0.4f)
                 .align(Alignment.CenterVertically)
-                .padding(end=8.dp)
+                .padding(end = 4.dp)
         )
 
         hourSlots.forEachIndexed { index, hourSlot ->
             HourBox(
-                hourSlot,
-                onClick = {onClick(index)}
+                hourSlot = hourSlot,
+                isSelected = (selectedHourInRow == index),
+                onClick = { onClick(index) }
             )
         }
     }
@@ -52,8 +57,7 @@ fun PartOfDayRowPreview() {
     val testHour3 = HourSlot()
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        PartOfDayRow(label = "morning 4-10", hourSlots = listOf(testHour0, testHour1, testHour2, testHour3, testHour0, testHour2), onClick = {})
+        PartOfDayRow(label = "Morning", hourSlots = listOf(testHour0, testHour1, testHour2, testHour3, testHour0, testHour2), selectedHourInRow = 2, onClick = {})
         PartOfDayRow(label = "Day", hourSlots = listOf(testHour1, testHour2, testHour3, testHour0, testHour2, testHour0), onClick = {})
-        PartOfDayRow(label = "Evening", hourSlots = listOf(testHour3, testHour0, testHour2, testHour2, testHour3, testHour0), onClick = {})
     }
 }

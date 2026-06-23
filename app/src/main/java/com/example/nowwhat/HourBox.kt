@@ -7,8 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -17,23 +21,34 @@ import androidx.compose.ui.unit.dp
 fun HourBox(
    hourSlot: HourSlot?,
    onClick: () -> Unit, // callback
-   modifier: Modifier = Modifier
+   modifier: Modifier = Modifier,
+   isSelected: Boolean = false
 ) {
 
     val borderColour = hourSlot?.planned?.colour
         ?.let {Color(it)}
-        ?: Color.Transparent
+        ?: Color(0xFFEEEEEE)
 
     val fillColour = hourSlot?.actual?.colour
         ?.let {Color(it)}
-        ?: Color.Transparent
+        ?: Color(0xFFF5F5F5)
+
+    val shape = RoundedCornerShape(8.dp)
+    val selectedShape = RoundedCornerShape(12.dp)
+
+    val displayShape = if (isSelected) selectedShape else shape
 
     Box(
         modifier = modifier
-            .size(50.dp)
-            .border(4.dp, borderColour)
+            .size(40.dp)
+            .shadow(
+                elevation = if (isSelected) 10.dp else 0.dp,
+                shape = displayShape
+            )
+            .border(2.dp, borderColour, displayShape)
+            .clip(displayShape)
             .background(fillColour)
-            .clickable(onClick=onClick)
+            .clickable(onClick = onClick)
     )
 }
 
@@ -50,11 +65,8 @@ fun HourBoxPreview() {
 
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         HourBox(hourSlot = testHour0, onClick = {})
-        HourBox(hourSlot = testHour1, onClick = {})
+        HourBox(hourSlot = testHour1, isSelected = true, onClick = {})
         HourBox(hourSlot = testHour2, onClick = {})
         HourBox(hourSlot = testHour3, onClick = {})
-        HourBox(hourSlot = testHour2, onClick = {})
-        HourBox(hourSlot = testHour0, onClick = {})
     }
-
 }
