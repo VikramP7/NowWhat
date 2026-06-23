@@ -12,15 +12,15 @@ import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopBar(
+fun TopBarSettings(
     onClick: () -> Unit, // callback
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
-        title = {Text("NowWhat")},
+        title = { Text("Settings") },
         actions = {
             IconButton(onClick = { onClick() }) {
-                Text("☰")
+                Text("←")
             }
         }
     )
@@ -28,6 +28,6 @@ fun TopBar(
 
 @Preview
 @Composable
-fun TopBarPreview() {
-    TopBar(onClick = {})
+fun TopBarSettingsPreview() {
+    TopBarSettings(onClick = {})
 }

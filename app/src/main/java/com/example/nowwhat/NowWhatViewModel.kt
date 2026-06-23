@@ -7,19 +7,14 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Date
-import kotlin.collections.emptyList
-import kotlin.time.Duration.Companion.days
-import kotlin.time.ExperimentalTime
-import java.time.Instant
 
 class NowWhatViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -155,5 +150,23 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
     fun clearSelection() {
         _selectedTimestamp.value = defaultTimestamp()
+    }
+
+    fun addActivity(activity: Activity){
+        viewModelScope.launch {
+            activityDao.insert(activity)
+        }
+    }
+
+    fun updateActivity(name: String, colour: Int, activityId: Long){
+        viewModelScope.launch {
+            activityDao.updateActivity(name, colour, activityId)
+        }
+    }
+
+    fun removeActivity(activity: Activity){
+        viewModelScope.launch {
+            activityDao.delete(activity)
+        }
     }
 }

@@ -11,6 +11,9 @@ interface ActivityDao {
     @Insert
     suspend fun insert(activity: Activity)
 
+    @Query("UPDATE activities SET name = :name, colour = :colour WHERE id = :activityId")
+    suspend fun updateActivity(name: String, colour: Int, activityId: Long)
+
     @Query("SELECT * FROM activities")
     fun getAll(): Flow<List<Activity>>
 

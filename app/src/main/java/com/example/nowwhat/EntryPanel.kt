@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -47,8 +48,6 @@ fun EntryPanel(
     val startTime = dateTime.format(hourFormatter)
     val endTime = dateTime.plusHours(1).format(hourFormatter)
 
-    val editActivity = Activity(name = "Edit+", colour = 0xffcccccc.toInt())
-
     Column(modifier = modifier.fillMaxWidth().padding(16.dp)) {
         Row() {
             Text("clockIcon")
@@ -63,10 +62,9 @@ fun EntryPanel(
                 )
             }
             item() {
-                PresetButton(
-                    activity = editActivity,
-                    onClick = { onEditClick() }
-                )
+                OutlinedButton(onClick = { onEditClick() }) {
+                    Text("Edit")
+                }
             }
         }
 
@@ -78,14 +76,14 @@ fun EntryPanel(
             itemsIndexed(activityList, key = {_, activity -> activity.id}) {activityIndex, activity ->
                 PresetButton(
                     activity= activity,
-                    onClick={onActualClick(activityIndex)}
+                    onClick={onActualClick(activityIndex)},
+                    filled = true
                 )
             }
             item() {
-                PresetButton(
-                    activity = editActivity,
-                    onClick = { onEditClick() }
-                )
+                OutlinedButton(onClick = { onEditClick() }) {
+                    Text("Edit")
+                }
             }
         }
         Spacer(Modifier.height(8.dp))

@@ -19,18 +19,32 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun PresetButton(
     activity: Activity,
-    onClick: () -> Unit, // callback
-    modifier: Modifier = Modifier
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    filled: Boolean = false
 ) {
-    OutlinedButton(
-        modifier = modifier,
-        onClick = { onClick() },
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = Color(activity.colour)
-        ),
-        border = BorderStroke(2.dp, Color(activity.colour))
-    ) {
-        Text(activity.name)
+    if (filled) {
+        Button(
+            modifier = modifier,
+            onClick = { onClick() },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(activity.colour),
+                contentColor = Color.White
+            )
+        ) {
+            Text(activity.name)
+        }
+    } else {
+        OutlinedButton(
+            modifier = modifier,
+            onClick = { onClick() },
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = Color(activity.colour)
+            ),
+            border = BorderStroke(2.dp, Color(activity.colour))
+        ) {
+            Text(activity.name)
+        }
     }
 }
 
@@ -42,6 +56,6 @@ fun PresetButtonPreview() {
 
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         PresetButton(activity = gymActivity, onClick= {})
-        PresetButton(activity = sleepActivity, onClick= {})
+        PresetButton(activity = sleepActivity, onClick= {}, filled = true)
     }
 }
