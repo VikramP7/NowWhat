@@ -104,6 +104,7 @@ Done:
 - [ ] Auto-populate today's date in the HoursView on launch so the user doesn't have to log an entry to see the current day
 - [ ] Prevent logging "actual" activities for hours in the future
 - [ ] Default schedule: settings to define recurring planned activities (e.g. working hours, sleep schedule) that auto-populate new days
+- [ ] More style decisions: Font, font size, colour scheme, night mode colours, etc
 - [ ] Hourly notification engine: exact alarms + reschedule-on-fire + boot receiver + `POST_NOTIFICATIONS` permission + notification channel (plus inline direct-reply if feasible)
 - [ ] CSV export/import via the system share sheet
 - [ ] Danger zone in settings: clear all data / reset database
