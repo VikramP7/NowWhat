@@ -10,10 +10,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nowwhat.ui.theme.OffWhite
 
 @Composable
 fun NowWhatSettingsScreen(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     viewModel: NowWhatViewModel = viewModel(),
     onMainNavigate: () -> Unit
 ) {
@@ -22,6 +23,7 @@ fun NowWhatSettingsScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = OffWhite,
         topBar = { TopBarSettings(onClick = {onMainNavigate()}) }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxWidth().padding(16.dp)) {

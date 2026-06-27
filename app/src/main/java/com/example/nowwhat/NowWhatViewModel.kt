@@ -3,6 +3,7 @@ package com.example.nowwhat
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.nowwhat.ui.theme.LightActivityColours
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,11 +32,11 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val existing = activityDao.getAll().first()
             if (existing.isEmpty()) {
-                activityDao.insert(Activity("Work", 0xFF4CAF50.toInt()))
-                activityDao.insert(Activity("Sleep", 0xFF3F51B5.toInt()))
-                activityDao.insert(Activity("Gym", 0xFFFF9800.toInt()))
-                activityDao.insert(Activity("Social", 0xFFE91E63.toInt()))
-                activityDao.insert(Activity("Dating", 0xFFF48FB1.toInt()))
+                activityDao.insert(Activity("Work", LightActivityColours[0]))
+                activityDao.insert(Activity("Sleep", LightActivityColours[1]))
+                activityDao.insert(Activity("Gym", LightActivityColours[2]))
+                activityDao.insert(Activity("Social", LightActivityColours[3]))
+                activityDao.insert(Activity("Dating", LightActivityColours[4]))
             }
         }
     }

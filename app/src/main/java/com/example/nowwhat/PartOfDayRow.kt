@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
 fun PartOfDayRow(
@@ -32,7 +33,8 @@ fun PartOfDayRow(
             modifier = Modifier
                 .weight(0.4f)
                 .align(Alignment.CenterVertically)
-                .padding(end = 4.dp)
+                .padding(end = 4.dp),
+            color = TextColour
         )
 
         hourSlots.forEachIndexed { index, hourSlot ->

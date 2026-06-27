@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.nowwhat.ui.theme.LightActivityColours
+import com.example.nowwhat.ui.theme.TextColour
 
 
 @Composable
@@ -38,7 +40,8 @@ fun ActivityLegend(
                 )
                 Text(
                     text = activity.name,
-                    style = MaterialTheme.typography.labelMedium
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextColour
                 )
             }
         }
@@ -48,8 +51,8 @@ fun ActivityLegend(
 @Preview
 @Composable
 fun ActivityLegendPreview() {
-    val gymActivity = Activity("Gym", 0xFF32a852.toInt())
-    val sleepActivity = Activity("Sleeping", 0xFF1422c4.toInt())
+    val gymActivity = Activity("Gym", LightActivityColours[0])
+    val sleepActivity = Activity("Sleeping", LightActivityColours[1])
 
     ActivityLegend(activityList = listOf(gymActivity, sleepActivity))
 }

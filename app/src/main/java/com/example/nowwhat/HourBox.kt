@@ -16,6 +16,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.nowwhat.ui.theme.BoxBorderGrey
+import com.example.nowwhat.ui.theme.BoxFillGrey
 
 @Composable
 fun HourBox(
@@ -27,11 +29,11 @@ fun HourBox(
 
     val borderColour = hourSlot?.planned?.colour
         ?.let {Color(it)}
-        ?: Color(0xFFEEEEEE)
+        ?: BoxBorderGrey
 
     val fillColour = hourSlot?.actual?.colour
         ?.let {Color(it)}
-        ?: Color(0xFFF5F5F5)
+        ?: BoxFillGrey
 
     val shape = RoundedCornerShape(8.dp)
     val selectedShape = RoundedCornerShape(12.dp)

@@ -1,7 +1,6 @@
 package com.example.nowwhat
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,12 +16,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -34,14 +31,8 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-
-val ACTIVITYCOLOURS: List<Int> = listOf(
-    0xFF4CAF50.toInt(),
-    0xFF3F51B5.toInt(),
-    0xFFFF9800.toInt(),
-    0xFFE91E63.toInt(),
-    0xFFF48FB1.toInt(),
-)
+import com.example.nowwhat.ui.theme.LightActivityColours
+import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
 fun ActivitiesSettings(
@@ -52,7 +43,7 @@ fun ActivitiesSettings(
     onRemoveActivity: (activity: Activity) -> Unit
 ){
 
-    Text(text = "Edit Activities:")
+    Text(text = "Edit Activities:", color = TextColour)
     LazyColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -106,22 +97,25 @@ fun ActivitiesSettings(
             }
 
             if(showColorPicker){
-                LazyRow(modifier= Modifier.fillMaxWidth(),horizontalArrangement = Arrangement.SpaceAround) {
-                    itemsIndexed(ACTIVITYCOLOURS, key = {index, colour -> colour}) { index, colour ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    LightActivityColours.forEach { colour ->
                         val shape = RoundedCornerShape(8.dp)
-                        Box(modifier = Modifier
-                            .size(40.dp)
-                            .padding(4.dp)
-                            .shadow(
-                                elevation = 5.dp,
-                                shape = shape
-                            )
-                            .clip(shape)
-                            .background(Color(colour))
-                            .clickable{
-                                onUpdateActivity(activity.name, colour, activity.id)
-                                showColorPicker = false
-                            }
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .shadow(
+                                    elevation = 5.dp,
+                                    shape = shape
+                                )
+                                .clip(shape)
+                                .background(Color(colour))
+                                .clickable {
+                                    onUpdateActivity(activity.name, colour, activity.id)
+                                    showColorPicker = false
+                                }
                         )
                     }
                 }
@@ -136,7 +130,7 @@ fun ActivitiesSettings(
             Button(onClick = {onAddActivity(
                 Activity(
                     name = "",
-                    colour = 0xFF4CAF50.toInt()
+                    colour = LightActivityColours[0]
                 )
             )}) {
                 Icon(

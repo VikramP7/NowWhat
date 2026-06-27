@@ -12,6 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nowwhat.ui.theme.NowWhatTheme
+import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.TextColour
+import org.w3c.dom.Text
 
 enum class AppScreenState {MAIN, SETTINGS}
 
@@ -25,21 +28,16 @@ class MainActivity : ComponentActivity() {
             val viewModel: NowWhatViewModel = viewModel()
 
             NowWhatTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    when(screenState.value){
-                        AppScreenState.MAIN -> NowWhatScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            viewModel = viewModel,
-                            onSettingsNavigate = {screenState.value = AppScreenState.SETTINGS}
-                        )
+                when(screenState.value){
+                    AppScreenState.MAIN -> NowWhatScreen(
+                        viewModel = viewModel,
+                        onSettingsNavigate = {screenState.value = AppScreenState.SETTINGS}
+                    )
 
-                        AppScreenState.SETTINGS -> NowWhatSettingsScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            viewModel = viewModel,
-                            onMainNavigate = {screenState.value = AppScreenState.MAIN}
-                        )
-                    }
-
+                    AppScreenState.SETTINGS -> NowWhatSettingsScreen(
+                        viewModel = viewModel,
+                        onMainNavigate = {screenState.value = AppScreenState.MAIN}
+                    )
                 }
             }
         }
