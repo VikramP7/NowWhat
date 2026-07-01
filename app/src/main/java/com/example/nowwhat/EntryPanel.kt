@@ -103,6 +103,7 @@ fun EntryPanel(
                     Text("Edit+")
                 }
             }
+            item { Spacer(modifier = Modifier.height(22.dp)) }
         }
 
         Spacer(Modifier.height(8.dp))
@@ -129,6 +130,7 @@ fun EntryPanel(
                     Text("Edit+")
                 }
             }
+            item { Spacer(modifier = Modifier.height(22.dp)) }
         }
         Spacer(Modifier.height(8.dp))
         Text(text = "Tap any hour above to edit it.", color = TextColour)

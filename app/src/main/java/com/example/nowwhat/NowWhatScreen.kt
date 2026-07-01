@@ -59,7 +59,7 @@ fun NowWhatScreen(
                 top = innerPadding.calculateTopPadding(),
                 start = 16.dp,
                 end = 16.dp,
-                bottom = 0.dp)
+                bottom = innerPadding.calculateBottomPadding())
                 .drawWithContent {
                     drawContent()
                     // Top fade
@@ -77,8 +77,8 @@ fun NowWhatScreen(
                     drawRect(
                         brush = Brush.verticalGradient(
                             colors = listOf(OffWhite.copy(alpha = 0f), OffWhite),
-                            startY = size.height - bottomBarPx - fadeHeightBottom,
-                            endY = size.height - bottomBarPx
+                            startY = size.height - fadeHeightBottom,
+                            endY = size.height
                         )
                     )
             },
