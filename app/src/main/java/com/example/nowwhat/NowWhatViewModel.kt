@@ -38,6 +38,17 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                 activityDao.insert(Activity("Social", LightActivityColours[3]))
                 activityDao.insert(Activity("Dating", LightActivityColours[4]))
             }
+
+            // current time truncated to the current day
+            val day = (System.currentTimeMillis() / 86_400_000) * 86_400_000
+            val newest = hourEntryDao.getSince(day).first()
+            if(newest.isEmpty()){
+                hourEntryDao.insert(HourEntry(
+                    defaultTimestamp(),
+                    null,
+                    null
+                ))
+            }
         }
     }
 
@@ -121,13 +132,16 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val timestamp = _selectedTimestamp.value
             val existing = hourEntryDao.getByTimestamp(timestamp)
-            if (existing != null) {
-                hourEntryDao.updateActual(timestamp, activityId)
-            } else {
-                hourEntryDao.insert(
-                    HourEntry(timestamp = timestamp, plannedActivityId = null, actualActivityId = activityId)
-                )
+            if (timestamp <= defaultTimestamp()){
+                if (existing != null) {
+                    hourEntryDao.updateActual(timestamp, activityId)
+                } else {
+                    hourEntryDao.insert(
+                        HourEntry(timestamp = timestamp, plannedActivityId = null, actualActivityId = activityId)
+                    )
+                }
             }
+
             //clearSelection()
         }
     }

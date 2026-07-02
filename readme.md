@@ -101,13 +101,13 @@ Done:
 - [x] Wire the scaffolded UI to the ViewModel and Room
 - [x] Settings screen: manage preset activities (add, edit, delete) and their colours — accessible from the settings icon and the Edit button in EntryPanel
 - [x] Visual polish: rounded corners on HourBox, proper Material icons, consistent spacing and typography, app theming, gradient fade effects
-- [ ] Auto-populate today's date in the HoursView on launch so the user doesn't have to log an entry to see the current day
-- [ ] Prevent logging "actual" activities for hours in the future
+- [x] Auto-populate today's date in the HoursView on launch so the user doesn't have to log an entry to see the current day
+- [x] Prevent logging "actual" activities for hours in the future
 - [ ] Default schedule: settings to define recurring planned activities (e.g. working hours, sleep schedule) that auto-populate new days
+- [ ] Danger zone in settings: clear all data / reset database
 - [ ] More style decisions: Font, font size, colour scheme, night mode colours, etc
 - [ ] Hourly notification engine: exact alarms + reschedule-on-fire + boot receiver + `POST_NOTIFICATIONS` permission + notification channel (plus inline direct-reply if feasible)
 - [ ] CSV export/import via the system share sheet
-- [ ] Danger zone in settings: clear all data / reset database
 - [ ] Settings: configure the time bands (Night / Morning / Day / Evening boundaries)
 
 Placeholder assumptions (all configurable later in Settings): the time bands are four 6-hour blocks (Night 00:00–06:00, Morning 06:00–12:00, Day 12:00–18:00, Evening 18:00–24:00), and the starter presets are Work, Sleep, Gym, Social, and Dating.
