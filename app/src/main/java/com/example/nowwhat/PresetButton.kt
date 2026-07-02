@@ -21,7 +21,8 @@ fun PresetButton(
     activity: Activity,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    filled: Boolean = false
+    filled: Boolean = false,
+    enabled: Boolean = true
 ) {
     if (filled) {
         Button(
@@ -30,7 +31,8 @@ fun PresetButton(
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(activity.colour),
                 contentColor = Color.White
-            )
+            ),
+            enabled = enabled
         ) {
             Text(activity.name)
         }
@@ -41,7 +43,8 @@ fun PresetButton(
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = Color(activity.colour)
             ),
-            border = BorderStroke(2.dp, Color(activity.colour))
+            border = BorderStroke(2.dp, Color(activity.colour)),
+            enabled = enabled
         ) {
             Text(activity.name)
         }

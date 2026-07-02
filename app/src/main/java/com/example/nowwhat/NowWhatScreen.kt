@@ -29,6 +29,7 @@ fun NowWhatScreen(
     val activities by viewModel.activities.collectAsState()
 
     val selectedTimestamp by viewModel.selectedTimestamp.collectAsState()
+    val selectedIsFuture by viewModel.selectedIsFuture.collectAsState()
 
     Scaffold(
         modifier = modifier,
@@ -39,6 +40,7 @@ fun NowWhatScreen(
                 modifier = Modifier,
                 activityList = activities,
                 selectedTimestamp = selectedTimestamp,
+                selectedIsFuture = selectedIsFuture,
                 onPlannedClick = { activityIndex ->
                     val activity = activities[activityIndex]
                     viewModel.logPlannedActivity(activity.id)

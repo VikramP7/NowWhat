@@ -26,7 +26,9 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     private val activitiesFlow: Flow<List<Activity>> = activityDao.getAll()
 
     private val _selectedTimestamp = MutableStateFlow(defaultTimestamp())
+    private val _selectedIsFuture = MutableStateFlow(false)
     val selectedTimestamp: StateFlow<Long> = _selectedTimestamp
+    val selectedIsFuture: StateFlow<Boolean> = _selectedIsFuture
 
     init {
         viewModelScope.launch {
@@ -38,22 +40,11 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                 activityDao.insert(Activity("Social", LightActivityColours[3]))
                 activityDao.insert(Activity("Dating", LightActivityColours[4]))
             }
-
-            // current time truncated to the current day
-            val day = (System.currentTimeMillis() / 86_400_000) * 86_400_000
-            val newest = hourEntryDao.getSince(day).first()
-            if(newest.isEmpty()){
-                hourEntryDao.insert(HourEntry(
-                    defaultTimestamp(),
-                    null,
-                    null
-                ))
-            }
         }
     }
 
     private fun transformIntoDays(entries: List<HourEntry>, activities: List<Activity>): List<Day> {
-        if (entries.isEmpty()) return emptyList()
+        //if (entries.isEmpty()) return emptyList()
 
         // Build a lookup map by activityId to Activity object
         val activityMap: Map<Long, Activity> = activities.associateBy { it.id }
@@ -61,15 +52,19 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         // Group entries by date
         // Convert each timestamp to a LocalDate
         val grouped: Map<LocalDate, List<HourEntry>> = entries.groupBy { entry ->
-            Instant.ofEpochMilli(entry.timestamp)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate()
+            logicalDateOf(entry.timestamp)
         }
+
+        // synthesizing an empty day if no entries have been made for that day yet
+        val today = logicalDateOf(System.currentTimeMillis())
+        val groupedWithToday =
+            if (grouped.contains(today)) grouped
+            else grouped+(today to emptyList())
 
         // For each date, build a Day object
         val formatter = DateTimeFormatter.ofPattern("EEEE · MMM d")
 
-        return grouped.entries.sortedByDescending { it.key }.map { (date, dayEntries) ->
+        return groupedWithToday.entries.sortedByDescending { it.key }.map { (date, dayEntries) ->
 
             // Build 24-hour slots, one per hour, all starting null
             val hourSlots = arrayOfNulls<HourSlot>(24)
@@ -155,16 +150,15 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         val daysList = days.value
         if (dayIndex in daysList.indices) {
             val day = daysList[dayIndex]
-            _selectedTimestamp.value = day.localDate
-                .atTime(hourIndex, 0)
-                .atZone(ZoneId.systemDefault())
-                .toInstant()
-                .toEpochMilli()
+            _selectedTimestamp.value = timestampOf(day.localDate, hourIndex)
+
+            _selectedIsFuture.value = _selectedTimestamp.value > defaultTimestamp()
         }
     }
 
     fun clearSelection() {
         _selectedTimestamp.value = defaultTimestamp()
+        _selectedIsFuture.value = false
     }
 
     fun addActivity(activity: Activity){

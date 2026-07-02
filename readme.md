@@ -105,8 +105,8 @@ Done:
 - [x] Prevent logging "actual" activities for hours in the future
 - [ ] Default schedule: settings to define recurring planned activities (e.g. working hours, sleep schedule) that auto-populate new days
 - [ ] Danger zone in settings: clear all data / reset database
-- [ ] More style decisions: Font, font size, colour scheme, night mode colours, etc
 - [ ] Hourly notification engine: exact alarms + reschedule-on-fire + boot receiver + `POST_NOTIFICATIONS` permission + notification channel (plus inline direct-reply if feasible)
+- [ ] More style decisions: Font, font size, colour scheme, night mode colours, etc
 - [ ] CSV export/import via the system share sheet
 - [ ] Settings: configure the time bands (Night / Morning / Day / Evening boundaries)
 

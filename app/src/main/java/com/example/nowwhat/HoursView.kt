@@ -29,7 +29,7 @@ fun HoursView(
 
     val selectedZoned = Instant.ofEpochMilli(selectedTimestamp)
         .atZone(ZoneId.systemDefault())
-    val selectedDate = selectedZoned.toLocalDate()
+    val selectedDate = logicalDateOf(selectedTimestamp)
     val selectedHour = selectedZoned.hour
 
     LazyColumn(

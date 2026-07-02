@@ -37,6 +37,7 @@ import java.time.format.DateTimeFormatter
 fun EntryPanel(
     activityList: List<Activity>,
     selectedTimestamp: Long,
+    selectedIsFuture: Boolean,
     onPlannedClick: (activityIndex: Int) -> Unit, // callback
     onActualClick: (activityIndex: Int) -> Unit,
     onEditClick: () -> Unit,
@@ -115,7 +116,8 @@ fun EntryPanel(
                 PresetButton(
                     activity= activity,
                     onClick={onActualClick(activityIndex)},
-                    filled = true
+                    filled = true,
+                    enabled = !selectedIsFuture
                 )
             }
             item() {
