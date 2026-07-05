@@ -22,7 +22,7 @@ import com.example.nowwhat.ui.theme.OffWhite
 fun NowWhatScreen(
     modifier: Modifier = Modifier,
     viewModel: NowWhatViewModel = viewModel(),
-    onSettingsNavigate: () -> Unit
+    onNavigate: (nextScreenState: AppScreenState) -> Unit
 ) {
 
     val days by viewModel.days.collectAsState()
@@ -34,7 +34,7 @@ fun NowWhatScreen(
     Scaffold(
         modifier = modifier,
         containerColor = OffWhite,
-        topBar = { TopBar(onClick = {onSettingsNavigate()}) },
+        topBar = { TopBar(onClick = {onNavigate(AppScreenState.SETTINGS)}) },
         bottomBar = {
             EntryPanel(
                 modifier = Modifier,
@@ -49,7 +49,7 @@ fun NowWhatScreen(
                     val activity = activities[activityIndex]
                     viewModel.logActualActivity(activity.id)
                 },
-                onEditClick = { onSettingsNavigate() },
+                onEditClick = { onNavigate(AppScreenState.SETTINGS_ACTIVITIES) },
             )
         }
     ) { innerPadding ->

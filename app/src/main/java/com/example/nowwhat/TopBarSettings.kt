@@ -18,10 +18,11 @@ import com.example.nowwhat.ui.theme.*
 @Composable
 fun TopBarSettings(
     onClick: () -> Unit, // callback
+    path: String = "",
     modifier: Modifier = Modifier
 ) {
     TopAppBar(
-        title = { Text("Settings") },
+        title = { Text("Settings$path") },
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = OffWhite,
             titleContentColor = TextColour,
