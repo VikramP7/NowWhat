@@ -25,6 +25,8 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     private val activityDao = AppDatabase.getDatabase(application).activityDao()
     private val activitiesFlow: Flow<List<Activity>> = activityDao.getAll()
 
+    private val settingsStore = SettingsStore(application)
+
     private val _selectedTimestamp = MutableStateFlow(defaultTimestamp())
     private val _selectedIsFuture = MutableStateFlow(false)
     val selectedTimestamp: StateFlow<Long> = _selectedTimestamp
@@ -43,7 +45,23 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    private fun transformIntoDays(entries: List<HourEntry>, activities: List<Activity>): List<Day> {
+    /* ---------------------------- APP VALs ----------------------------*/
+    val days = combine(entriesFlow, activitiesFlow, settingsStore.dayStartHour) { entries, activities, startHour ->
+        transformIntoDays(entries, activities, startHour)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    val activities = activitiesFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    /* ---------------------------- HOUR LOGGING HELPER FUNCTIONS ----------------------------*/
+    private fun transformIntoDays(entries: List<HourEntry>, activities: List<Activity>, dayStartHour: Int): List<Day> {
         //if (entries.isEmpty()) return emptyList()
 
         // Build a lookup map by activityId to Activity object
@@ -52,11 +70,11 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         // Group entries by date
         // Convert each timestamp to a LocalDate
         val grouped: Map<LocalDate, List<HourEntry>> = entries.groupBy { entry ->
-            logicalDateOf(entry.timestamp)
+            logicalDateOf(entry.timestamp, dayStartHour)
         }
 
         // synthesizing an empty day if no entries have been made for that day yet
-        val today = logicalDateOf(System.currentTimeMillis())
+        val today = logicalDateOf(System.currentTimeMillis(), dayStartHour)
         val groupedWithToday =
             if (grouped.contains(today)) grouped
             else grouped+(today to emptyList())
@@ -81,31 +99,37 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
             // Slice into 4 bands
             // Morning(6-11), Day(12-17), Evening(18-23), Night(0-5)
-            val rows = listOf(
-                hourSlots.slice(6..11),
-                hourSlots.slice(12..17),
-                hourSlots.slice(18..23),
-                hourSlots.slice(0..5)
-            )
+            val rows = (0..3).map { band ->
+                (0..5).map { offset ->
+                    hourSlots[(dayStartHour + (band * 6) + offset) % 24]
+                }
+            }
 
             Day(date = date.format(formatter), hourRows = rows, localDate = date)
         }
     }
 
-    val days = combine(entriesFlow, activitiesFlow) { entries, activities ->
-        transformIntoDays(entries, activities)
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+    private fun defaultTimestamp(): Long {
+        // Truncate to current hour
+        return (System.currentTimeMillis() / 3_600_000) * 3_600_000
+    }
 
-    val activities = activitiesFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+    fun selectHour(dayIndex: Int, hourIndex: Int) {
+        val daysList = days.value
+        if (dayIndex in daysList.indices) {
+            val day = daysList[dayIndex]
+            _selectedTimestamp.value = timestampOf(day.localDate, hourIndex, dayStartHour.value)
 
+            _selectedIsFuture.value = _selectedTimestamp.value > defaultTimestamp()
+        }
+    }
+
+    fun clearSelection() {
+        _selectedTimestamp.value = defaultTimestamp()
+        _selectedIsFuture.value = false
+    }
+
+    /* ---------------------------- HOUR LOGGING FUNCTIONS ----------------------------*/
     fun logPlannedActivity(activityId: Long) {
         viewModelScope.launch {
             val timestamp = _selectedTimestamp.value
@@ -138,26 +162,8 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    private fun defaultTimestamp(): Long {
-        // Truncate to current hour
-        return (System.currentTimeMillis() / 3_600_000) * 3_600_000
-    }
 
-    fun selectHour(dayIndex: Int, hourIndex: Int) {
-        val daysList = days.value
-        if (dayIndex in daysList.indices) {
-            val day = daysList[dayIndex]
-            _selectedTimestamp.value = timestampOf(day.localDate, hourIndex)
-
-            _selectedIsFuture.value = _selectedTimestamp.value > defaultTimestamp()
-        }
-    }
-
-    fun clearSelection() {
-        _selectedTimestamp.value = defaultTimestamp()
-        _selectedIsFuture.value = false
-    }
-
+    /* ---------------------------- ACTIVITY FUNCTIONS ----------------------------*/
     fun addActivity(activity: Activity){
         viewModelScope.launch {
             activityDao.insert(activity)
@@ -175,4 +181,31 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
             activityDao.delete(activity)
         }
     }
+
+    /* ---------------------------- SETTINGS VALs ----------------------------*/
+    val is24Hour = settingsStore.is24Hour.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
+    val dayStartHour = settingsStore.dayStartHour.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = 6
+    )
+
+    /* ---------------------------- SETTINGS FUNCTIONS ----------------------------*/
+    fun setIs24Hour(value: Boolean) {
+        viewModelScope.launch {
+            settingsStore.setIs24Hour(value)
+        }
+    }
+
+    fun setDayStartHour(value: Int) {
+        viewModelScope.launch {
+            settingsStore.setDayStartHour(value)
+        }
+    }
+
 }

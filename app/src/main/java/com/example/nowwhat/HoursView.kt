@@ -22,6 +22,8 @@ import java.time.ZoneId
 @Composable
 fun HoursView(
     days: List<Day>,
+    is24Hour: Boolean,
+    dayStartHour: Int,
     onClick: (dayIndex: Int, hourIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
     selectedTimestamp: Long = 0L
@@ -29,7 +31,7 @@ fun HoursView(
 
     val selectedZoned = Instant.ofEpochMilli(selectedTimestamp)
         .atZone(ZoneId.systemDefault())
-    val selectedDate = logicalDateOf(selectedTimestamp)
+    val selectedDate = logicalDateOf(selectedTimestamp, dayStartHour)
     val selectedHour = selectedZoned.hour
 
     LazyColumn(
@@ -48,6 +50,8 @@ fun HoursView(
                 }
                 DaySection(
                     day = day,
+                    is24Hour = is24Hour,
+                    dayStartHour = dayStartHour,
                     selectedHourOfDay = if (day.localDate == selectedDate) selectedHour else null,
                     onClick = { hourIndex -> onClick(dayIndex, hourIndex) }
                 )

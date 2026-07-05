@@ -11,20 +11,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.nowwhat.ui.theme.TextColour
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun DaySection(
     day: Day,
+    is24Hour: Boolean,
+    dayStartHour: Int,
     onClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
     selectedHourOfDay: Int? = null
 ) {
+    // 0..23 hours past the day's start, or null
+    val selectedOffset = selectedHourOfDay?.let { (it - dayStartHour + 24) % 24 }
 
-    // Morn  Day  Even  Nite
-    // 6     12   18    0    (hour-offset)
-    // 0     1    2     3    (index)
-
-    val dayPartLabels = listOf("Morning 6am", "Day 12pm", "Evening 6pm", "Night 12am")
+    val bandNames = listOf("Morning", "Day", "Evening", "Night")
+    val dayPartLabels = bandNames.mapIndexed { index, name ->
+        "$name ${formatHourLabel((dayStartHour + index * 6) % 24, is24Hour)}"
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -36,21 +40,15 @@ fun DaySection(
         )
 
         day.hourRows.forEachIndexed { index, row ->
-            val hourOffset = ((index + 1) % 4) * 6
-
-            val selectedInRow = if (
-                selectedHourOfDay != null
-                && selectedHourOfDay >= hourOffset
-                && selectedHourOfDay < hourOffset + 6
-            ) {
-                selectedHourOfDay - hourOffset
-            } else null
+            val selectedInRow =
+                if (selectedOffset != null && selectedOffset / 6 == index) selectedOffset % 6
+                else null
 
             PartOfDayRow(
                 label = dayPartLabels[index],
                 hourSlots = row,
                 selectedHourInRow = selectedInRow,
-                onClick = { hourInRow -> onClick(hourOffset + hourInRow) }
+                onClick = { hourInRow -> onClick((dayStartHour + (index * 6) + hourInRow) % 24) }
             )
         }
     }

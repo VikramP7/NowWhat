@@ -31,6 +31,6 @@ fun NotificationsSettingsScreen(
         ) }
     ) { innerPadding ->
 
-        Text(text = "Coming Soon", modifier.fillMaxWidth().padding(innerPadding))
+        Text(text = "Coming Soon...\n Master notifications switch, do not disturb times, notification format, etc", modifier.fillMaxWidth().padding(innerPadding))
     }
 }

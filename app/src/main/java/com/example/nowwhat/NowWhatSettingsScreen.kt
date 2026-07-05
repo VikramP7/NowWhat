@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -23,7 +25,8 @@ fun NowWhatSettingsScreen(
     onNavigate: (nextScreenState: AppScreenState) -> Unit
 ) {
 
-    val activities by viewModel.activities.collectAsState()
+    val is24Hour by viewModel.is24Hour.collectAsState()
+    val dayStartHour by viewModel.dayStartHour.collectAsState()
 
     Scaffold(
         modifier = modifier,
@@ -56,18 +59,26 @@ fun NowWhatSettingsScreen(
                 )
             }
 
-            SettingRow(
-                label = "Morning Start Time",
-
-            ) {
-                // NumberPicker() - I don't know how this thing works
+            SettingRow(label = "Day Starts At") {
+                NumberStepper(
+                    value = dayStartHour,
+                    onValueChange = { viewModel.setDayStartHour(it) },
+                    format = { "%02d:00".format(it) }
+                )
             }
 
-            SettingRow(
-                label = "Time Format",
-
-                ) {
-                // NumberPicker() - I don't know how this thing works (12-hour, 24-hour)
+            SettingRow(label = "24-Hour Time") {
+                Switch(
+                    checked = is24Hour,
+                    onCheckedChange = { viewModel.setIs24Hour(it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = OffWhite,
+                        checkedTrackColor = TextColour,
+                        uncheckedThumbColor = TextColour,
+                        uncheckedTrackColor = OffWhite,
+                        uncheckedBorderColor = TextColour
+                    )
+                )
             }
 
             SettingRow(

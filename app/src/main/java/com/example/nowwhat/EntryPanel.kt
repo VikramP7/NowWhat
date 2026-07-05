@@ -38,6 +38,7 @@ fun EntryPanel(
     activityList: List<Activity>,
     selectedTimestamp: Long,
     selectedIsFuture: Boolean,
+    is24Hour: Boolean,
     onPlannedClick: (activityIndex: Int) -> Unit, // callback
     onActualClick: (activityIndex: Int) -> Unit,
     onEditClick: () -> Unit,
@@ -48,7 +49,8 @@ fun EntryPanel(
         .atZone(zone)
 
     val dayFormatter = DateTimeFormatter.ofPattern("MMM d")
-    val hourFormatter = DateTimeFormatter.ofPattern("h:mm a")
+    val hourPattern = if (is24Hour) "HH:mm" else "h:mm a"
+    val hourFormatter = DateTimeFormatter.ofPattern(hourPattern)
 
     val dayText = dateTime.format(dayFormatter)
     val startTime = dateTime.format(hourFormatter)

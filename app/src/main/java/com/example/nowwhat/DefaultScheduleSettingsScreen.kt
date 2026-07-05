@@ -44,7 +44,7 @@ fun DefaultScheduleSettingsScreen(
         Column(modifier = Modifier.padding(innerPadding).fillMaxWidth().padding(16.dp)){
             val today = days.firstOrNull()
             if (today != null) {
-                DaySection(day = today, onClick = {/*handle selection and have back end to keep track of what hour is selected in default schedule*/})
+                DaySection(day = today, is24Hour = false, dayStartHour = 6, onClick = {/*handle selection and have back end to keep track of what hour is selected in default schedule*/})
             }
 
             Text(text = "Default schedule planned?", color = TextColour)
