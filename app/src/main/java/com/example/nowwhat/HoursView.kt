@@ -49,7 +49,8 @@ fun HoursView(
                     )
                 }
                 DaySection(
-                    day = day,
+                    hourRows = day.hourRows,
+                    dateLabel = day.date,
                     is24Hour = is24Hour,
                     dayStartHour = dayStartHour,
                     selectedHourOfDay = if (day.localDate == selectedDate) selectedHour else null,

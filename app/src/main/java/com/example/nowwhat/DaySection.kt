@@ -14,7 +14,8 @@ import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
 fun DaySection(
-    day: Day,
+    hourRows: List<List<HourSlot?>>,
+    dateLabel: String,
     is24Hour: Boolean,
     dayStartHour: Int,
     onClick: (Int) -> Unit,
@@ -31,14 +32,14 @@ fun DaySection(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = day.date,
+            text = dateLabel,
             style = MaterialTheme.typography.titleSmall,
             textAlign = TextAlign.Start,
             modifier = Modifier.padding(end = 8.dp),
             color = TextColour
         )
 
-        day.hourRows.forEachIndexed { index, row ->
+        hourRows.forEachIndexed { index, row ->
             val selectedInRow =
                 if (selectedOffset != null && selectedOffset / 6 == index) selectedOffset % 6
                 else null

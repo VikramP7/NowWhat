@@ -1,5 +1,6 @@
 package com.example.nowwhat
 
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -20,9 +21,24 @@ fun timestampOf(logicalDate: LocalDate, hourOfDay: Int, dayStartHour: Int, zone:
     return calendarDate.atTime(hourOfDay, 0).atZone(zone).toInstant().toEpochMilli()
 }
 
+fun partOfLogicalDay(dayOfWeek: Int, hourOfDay: Int, selectedDay:Int, dayStartHour: Int): Boolean{
+    return if (hourOfDay >= dayStartHour){
+        dayOfWeek == selectedDay
+    }else{
+        dayOfWeek == ((selectedDay%7)+1)
+    }
+}
+
+// which real weekday a slot belongs to, given the logical day it's displayed under
+fun scheduleWeekdayFor(hourOfDay: Int, selectedDay: Int, dayStartHour: Int): Int =
+    if (hourOfDay >= dayStartHour) selectedDay else (selectedDay % 7) + 1
+
 // instant  ->  hour-of-day 0–23 in local time (no logical-day shift nessesary)
 fun hourOfDay(timestamp: Long, zone: ZoneId = ZoneId.systemDefault()): Int =
     Instant.ofEpochMilli(timestamp).atZone(zone).hour
+
+fun dayOfWeek(timestamp: Long, zone: ZoneId = ZoneId.systemDefault()): Int =
+    Instant.ofEpochMilli(timestamp).atZone(zone).dayOfWeek.value
 
 fun formatHourLabel(hour: Int, is24Hour: Boolean): String {
     return if (is24Hour) {
