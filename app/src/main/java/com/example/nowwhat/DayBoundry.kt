@@ -20,3 +20,7 @@ fun timestampOf(logicalDate: LocalDate, hourOfDay: Int, zone: ZoneId = ZoneId.sy
     val calendarDate = if (hourOfDay < DAY_START_HOUR) logicalDate.plusDays(1) else logicalDate
     return calendarDate.atTime(hourOfDay, 0).atZone(zone).toInstant().toEpochMilli()
 }
+
+// instant  ->  hour-of-day 0–23 in local time (no logical-day shift nessesary)
+fun hourOfDay(timestamp: Long, zone: ZoneId = ZoneId.systemDefault()): Int =
+    Instant.ofEpochMilli(timestamp).atZone(zone).hour

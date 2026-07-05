@@ -71,9 +71,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
             // Place each entry into the correct hour slot
             dayEntries.forEach { entry ->
-                val hour = Instant.ofEpochMilli(entry.timestamp)
-                    .atZone(ZoneId.systemDefault())
-                    .hour
+                val hour = hourOfDay(entry.timestamp)
 
                 hourSlots[hour] = HourSlot(
                     planned = entry.plannedActivityId?.let { activityMap[it] },
@@ -136,7 +134,6 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
             }
-
             //clearSelection()
         }
     }
