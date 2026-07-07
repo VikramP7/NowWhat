@@ -31,6 +31,6 @@ fun DangerZoneSettingsScreen(
         ) }
     ) { innerPadding ->
 
-        Text(text = "Coming Soon", modifier.fillMaxWidth().padding(innerPadding))
+        Text(text = "Coming Soon... Delete all entries, Reset Activities, reset default schedule", modifier.fillMaxWidth().padding(innerPadding))
     }
 }

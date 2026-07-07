@@ -143,7 +143,7 @@ Done:
 - [ ] Danger zone in settings: clear all data / reset database (screen scaffolded, not wired)
 - [ ] CSV export/import via the system share sheet (screen scaffolded, not wired)
 - [ ] More style decisions: font, font size, colour scheme, night mode colours
-- [ ] Fully configurable time bands (currently the four bands are fixed 6-hour blocks anchored at the start hour)
+- [ ] Android back button to navigate instead of close app
 - [ ] Cleanup: unused imports; replace `fallbackToDestructiveMigration()` with real migrations before real data accumulates; remove any remaining legacy v1 files
 
-Placeholder assumptions (configurable later in Settings): the four time bands are fixed 6-hour blocks anchored at the start hour (Morning = start, then +6/+12/+18), and the starter presets are Work, Sleep, Gym, Social, and Dating.
+Placeholder assumptions: the four time bands are fixed 6-hour blocks anchored at the start hour (Morning = start, then +6/+12/+18), and the starter presets are Work, Sleep, Gym, Social, and Dating.
