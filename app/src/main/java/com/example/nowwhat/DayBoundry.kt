@@ -52,3 +52,14 @@ fun formatHourLabel(hour: Int, is24Hour: Boolean): String {
         "$h12$period"
     }
 }
+
+fun withinHourSpan(timestamp: Long, startHour: Int, endHour:Int): Boolean{
+    val curHour = hourOfDay(timestamp)
+    return if(startHour > endHour){
+        // crosses midnight
+        (curHour>=startHour) || (curHour<endHour)
+    } else{
+        // doesn't cross midnight
+        (curHour>=startHour) && (curHour<endHour)
+    }
+}

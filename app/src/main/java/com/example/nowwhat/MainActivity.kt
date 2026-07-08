@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nowwhat.NotificationHelper.scheduleNextAlarm
 import com.example.nowwhat.ui.theme.NowWhatTheme
 
 enum class AppScreenState {
@@ -23,6 +24,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        NotificationHelper.createChannel(this)
+        scheduleNextAlarm(this)
         setContent {
 
             val screenState = remember { mutableStateOf(AppScreenState.MAIN)}
