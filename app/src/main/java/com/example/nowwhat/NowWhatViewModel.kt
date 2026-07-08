@@ -169,7 +169,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val timestamp = _selectedTimestamp.value
             val existing = hourEntryDao.getByTimestamp(timestamp)
-            if (timestamp <= defaultTimestamp()){
+            if (timestamp < defaultTimestamp()){
                 if (existing != null) {
                     hourEntryDao.updateActual(timestamp, activityId)
                 } else {
