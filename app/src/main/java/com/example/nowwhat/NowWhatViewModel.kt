@@ -13,12 +13,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import kotlin.time.Duration.Companion.milliseconds
 
 class NowWhatViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -34,7 +32,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     private val settingsStore = SettingsStore(application)
 
     private val _selectedTimestamp = MutableStateFlow(defaultTimestamp())
-    private val _selectedIsFuture = MutableStateFlow(false)
+    private val _selectedIsFuture = MutableStateFlow(true)
     val selectedTimestamp: StateFlow<Long> = _selectedTimestamp
     val selectedIsFuture: StateFlow<Boolean> = _selectedIsFuture
 
@@ -132,7 +130,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
     private fun defaultTimestamp(): Long {
         // Truncate to current hour
-        return (System.currentTimeMillis() / 3_600_000) * 3_600_000
+        return truncateToHour(System.currentTimeMillis())
     }
 
     fun selectHour(dayIndex: Int, hourIndex: Int) {
@@ -140,13 +138,13 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         if (dayIndex in daysList.indices) {
             val day = daysList[dayIndex]
             _selectedTimestamp.value = timestampOf(day.localDate, hourIndex, dayStartHour.value)
-            _selectedIsFuture.value = _selectedTimestamp.value > defaultTimestamp()
+            _selectedIsFuture.value = _selectedTimestamp.value >= defaultTimestamp()
         }
     }
 
     fun clearSelection() {
         _selectedTimestamp.value = defaultTimestamp()
-        _selectedIsFuture.value = false
+        _selectedIsFuture.value = true
     }
 
     /* ---------------------------- HOUR LOGGING FUNCTIONS ----------------------------*/
@@ -169,7 +167,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val timestamp = _selectedTimestamp.value
             val existing = hourEntryDao.getByTimestamp(timestamp)
-            if (timestamp < defaultTimestamp()){
+            if (!_selectedIsFuture.value){
                 if (existing != null) {
                     hourEntryDao.updateActual(timestamp, activityId)
                 } else {
@@ -313,6 +311,24 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         initialValue = 6
     )
 
+    val notificationsEnabled = settingsStore.notificationsEnabled.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val dndStartHour = settingsStore.dndStartHour.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 22
+    )
+
+    val dndEndHour = settingsStore.dndEndHour.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 7
+    )
+
     /* ---------------------------- SETTINGS FUNCTIONS ----------------------------*/
     fun setIs24Hour(value: Boolean) {
         viewModelScope.launch {
@@ -324,6 +340,18 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             settingsStore.setDayStartHour(value)
         }
+    }
+
+    fun setNotificationsEnabled(value: Boolean) {
+        viewModelScope.launch { settingsStore.setNotificationsEnabled(value) }
+    }
+
+    fun setDndStartHour(value: Int) {
+        viewModelScope.launch { settingsStore.setDndStartHour(value) }
+    }
+
+    fun setDndEndHour(value: Int) {
+        viewModelScope.launch { settingsStore.setDndEndHour(value) }
     }
 
 }

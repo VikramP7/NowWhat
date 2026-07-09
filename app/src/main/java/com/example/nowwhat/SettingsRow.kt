@@ -11,7 +11,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.nowwhat.ui.theme.BoxFillGrey
@@ -20,6 +22,7 @@ import com.example.nowwhat.ui.theme.TextColour
 @Composable
 fun SettingRow(
     label: String,
+    enabled: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     trailing: @Composable () -> Unit
@@ -28,10 +31,12 @@ fun SettingRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .shadow(elevation = 3.dp, shape = shape)
             .clip(shape)
             .background(BoxFillGrey)
+            .alpha(if (enabled) 1f else 0.4f)
             .then(
-                if (onClick != null) Modifier.clickable { onClick() }
+                if (onClick != null && enabled) Modifier.clickable { onClick() }
                 else Modifier
             )
             .padding(horizontal = 16.dp, vertical = 18.dp),

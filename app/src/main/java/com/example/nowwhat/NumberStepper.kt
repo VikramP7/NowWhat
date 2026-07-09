@@ -19,10 +19,14 @@ fun NumberStepper(
     modifier: Modifier = Modifier,
     min: Int = 0,
     max: Int = 23,
-    format: (Int) -> String = { it.toString() }
+    wrap: Boolean = false,
+    format: (Int) -> String = { it.toString() },
+    enabled: Boolean = true,
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = { onValueChange((value - 1).coerceIn(min, max)) }) {
+        IconButton(onClick = {
+            val next = if (wrap) wrapRange(value - 1, max) else (value - 1).coerceIn(min, max)
+            onValueChange(next) }, enabled = enabled) {
             Icon(
                 painter = painterResource(R.drawable.ic_remove),
                 contentDescription = "Decrease",
@@ -34,7 +38,8 @@ fun NumberStepper(
             style = MaterialTheme.typography.bodyLarge,
             color = TextColour
         )
-        IconButton(onClick = { onValueChange((value + 1).coerceIn(min, max)) }) {
+        IconButton(onClick = { val next = if (wrap) wrapRange(value + 1, max) else (value + 1).coerceIn(min, max)
+            onValueChange(next) }, enabled = enabled) {
             Icon(
                 painter = painterResource(R.drawable.ic_add),
                 contentDescription = "Increase",

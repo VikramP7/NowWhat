@@ -63,7 +63,7 @@ fun NowWhatSettingsScreen(
                 NumberStepper(
                     value = dayStartHour,
                     onValueChange = { viewModel.setDayStartHour(it) },
-                    format = { "%02d:00".format(it) }
+                    format = { formatHourLabel(it, is24Hour) }
                 )
             }
 

@@ -1,4 +1,4 @@
-*<div align="right"> Vikram Procter | June 21, 2026 </div>*
+*<div align="right"> Vikram Procter | July 9, 2026 </div>*
 
 # What Now? - README
 
@@ -29,7 +29,7 @@ The **settings screen** is a scrollable list of setting rows, each a rounded rec
 - **Edit Default Schedule** → weekly schedule editor
 - **Day Starts At** — a number stepper choosing the hour the day begins (see "The logical day" below)
 - **24-Hour Time** — a toggle switching all time displays between 12- and 24-hour format
-- **Notifications** → notifications settings (placeholder)
+- **Notifications** → notifications settings: master on/off switch, and a do-not-disturb window (from/until hour steppers)
 - **Export/Import Data** → CSV import/export (placeholder)
 - **DANGER ZONE** → destructive actions (placeholder)
 
@@ -47,9 +47,15 @@ A NowWhat "day" doesn't run midnight-to-midnight — it runs from a configurable
 
 When a new logical day first appears (on launch, or detected live at the day boundary via a one-minute ticker), the app seeds that day's *planned* activities from the matching weekday's schedule template. Seeding is **fill-only**: it never overwrites a planned activity you set manually. A "last seeded day" marker in DataStore ensures each day seeds only once.
 
-### Notifications (planned)
+### Notifications
 
-Hourly **notifications** fire on the hour (using exact alarms) prompting you to log the hour just passed and plan the hour ahead — ideally answerable straight from the notification.
+Hourly **notifications** fire on the hour (using exact alarms) prompting you to log the hour just passed. The engine is a **self-rescheduling one-shot alarm**: an exact alarm fires into `AlarmReceiver`, which immediately schedules the next hour's alarm before doing anything else (so the chain never breaks), then posts the notification. A `BootReceiver` reschedules on device restart, since Android clears alarms on reboot.
+
+The notification carries **inline action buttons** — tapping one logs that activity as the *actual* for the hour that just passed, straight from the notification shade, via `NotificationActionReceiver` (which writes to Room directly and dismisses the notification). Tapping the notification body instead opens the app. Suggestions are chosen contextually: first the activity you *planned* for the hour that just passed, then (as a fallback) what you *actually* did the hour before, then a default — deduplicated, and always at least one.
+
+Two deliberate scope limits: a notification shows at most **three action buttons**, so the current design is **log-only** — planning the hour ahead from the notification would need a different mechanism (inline text reply, or tap-to-open) and is future work. Notification **format** options are also not yet built.
+
+**Settings:** a master on/off switch and a **do-not-disturb window** (from/until hour). When notifications are off or the current hour falls inside the DND window, the alarm still reschedules but skips posting — silencing never breaks the chain. The DND check reuses `withinHourSpan` from `DayBoundry.kt`, so it correctly handles windows that cross midnight.
 
 ## Tech stack
 
@@ -57,13 +63,15 @@ Hourly **notifications** fire on the hour (using exact alarms) prompting you to 
 - **Room** (SQLite) for record data (activities, hour entries, schedule), processed via **KSP**
 - **Jetpack DataStore** (Preferences) for scalar settings (start hour, time format, seed marker)
 - **ViewModel** + **Kotlin Flow** + **StateFlow** for reactive state
-- **AlarmManager** (exact alarms) for on-the-hour notifications (planned)
+- **AlarmManager** (exact alarms) + **BroadcastReceiver**s for the self-rescheduling on-the-hour notification engine
 - **Material Design 3** with custom colour theme and vector drawable icons
 - Built in Android Studio; tested on a physical device over wireless ADB
 
 ## Architecture
 
 Data flows in one direction: **Entity → DAO → Database → ViewModel → Composable** (with DataStore as a parallel source for settings). Reads are exposed as reactive `Flow`s and `StateFlow`s, so the UI updates itself whenever the data changes. Events flow upward via callback lambdas (state hoisting).
+
+The **notification engine is a second entry point into the data layer**, living outside the ViewModel/Compose lifecycle: `AlarmReceiver`, `NotificationActionReceiver`, and `BootReceiver` reach Room and DataStore directly via `AppDatabase.getDatabase(context)` / `SettingsStore(context)` (reading with `runBlocking { flow.first() }`, which is acceptable for these short-lived, local-file reads). `NotificationHelper` (a stateless `object`) owns channel creation, notification building, and alarm scheduling. See the Notifications section above for the flow.
 
 Navigation uses a simple state-based approach: an `AppScreenState` enum (`MAIN`, `SETTINGS`, `SETTINGS_ACTIVITIES`, `SETTINGS_DEFAULTSCHEDULE`, `SETTINGS_NOTIFICATIONS`, `SETTINGS_DATA`, `SETTINGS_DANGERZONE`) held in `MainActivity`, with a `when` expression swapping between screens. Sub-screens navigate back to `SETTINGS`; the settings list navigates back to `MAIN`. Every screen receives the shared `ViewModel` instance and an `onNavigate` callback.
 
@@ -84,7 +92,8 @@ UI component tree:
     - `NumberStepper` — reusable −/value/+ stepper with a `format` lambda
     - `ActivitiesSettingsScreen` → `ActivitiesSettings`
     - `DefaultScheduleSettingsScreen` → `WeekdayPicker` + `DaySection` + preset row
-    - `NotificationsSettingsScreen`, `DataSettingsScreen`, `DangerZoneSettingsScreen` (placeholders)
+    - `NotificationsSettingsScreen` (wired: master switch + DND window)
+    - `DataSettingsScreen`, `DangerZoneSettingsScreen` (placeholders)
     - `TopBarSettings` — "Settings" title (+ optional breadcrumb path) + close/back icon
 
 ## Data model
@@ -97,7 +106,7 @@ Three tables:
 
 Scalar settings (DataStore, not Room):
 
-- `is_24_hour` (Boolean), `day_start_hour` (Int), `last_seeded_day` (Long, epoch-day marker).
+- `is_24_hour` (Boolean), `day_start_hour` (Int), `last_seeded_day` (Long, epoch-day marker), `notifications_enabled` (Boolean, default true), `dnd_start_hour` (Int, default 22), `dnd_end_hour` (Int, default 7).
 
 Supporting UI classes (not persisted):
 
@@ -124,6 +133,10 @@ Done:
 - Configurable **start of day**: a `DAY_START_HOUR`-seeded DataStore setting drives all logical-day math, grid slicing, and labels; grid re-lays-out live when changed
 - 24-hour time format toggle, applied to all time displays
 - Default schedule: per-weekday template editor (day-chips + grid + presets), stored in Room with the logical-day weekday-wrap on both read and write, plus fill-only auto-fill of new days
+- **Hourly notification engine**: notification channel, `POST_NOTIFICATIONS` runtime-permission flow, exact alarms via `AlarmManager`, self-rescheduling one-shot pattern (`AlarmReceiver` reschedules on fire), boot persistence (`BootReceiver` on `BOOT_COMPLETED`), tap-to-open, and **inline action buttons** that log the actual activity from the shade (`NotificationActionReceiver`) with contextual, deduplicated suggestions
+- **Notifications settings wired**: master on/off switch + do-not-disturb window (from/until steppers); the receiver honours both (silencing reschedules but skips posting)
+- 24-hour format now also applied to the hour steppers ("Day Starts At", DND from/until) via `formatHourLabel`; steppers gained an optional `wrap` mode (uses `wrapRange`) so time values roll 23→0 instead of clamping
+- Settings-row visual polish: raised shadow + rounded shape so each row reads as its own card; disabled rows (and their steppers) grey out via `alpha` and stop responding to input
 - App runs on physical device over wireless ADB
 
 ## TODO
@@ -138,12 +151,14 @@ Done:
 - [x] Configurable start-of-day hour (drives the logical-day system)
 - [x] 24-hour / 12-hour time format toggle
 - [x] Default schedule: per-weekday recurring planned activities that auto-populate new days
-- [ ] **Hourly notification engine: exact alarms + reschedule-on-fire + boot receiver + `POST_NOTIFICATIONS` permission + notification channel (plus inline direct-reply if feasible)** ← next priority
-- [ ] Notifications settings: master switch, do-not-disturb window, format (screen scaffolded, not wired)
-- [ ] Danger zone in settings: clear all data / reset database (screen scaffolded, not wired)
+- [x] Hourly notification engine: exact alarms + reschedule-on-fire + boot receiver + `POST_NOTIFICATIONS` permission + notification channel + inline action buttons (log actual from the shade)
+- [x] Notifications settings: master switch + do-not-disturb window *(format options and planning-from-notification deferred — see below)*
+- [ ] **Danger zone in settings: clear all data / reset database (screen scaffolded, not wired; `ScheduleDao.deleteAll()` already exists)** ← next priority
 - [ ] CSV export/import via the system share sheet (screen scaffolded, not wired)
+- [ ] Notification enhancements deferred from the engine work: **planning the next hour from the notification** (blocked by the 3-button limit — needs inline text reply or tap-to-open), and **notification format options**
+- [ ] Retire the one-minute seeding ticker in favour of the hourly alarm as the day-change pulse (the engine now provides a natural hourly heartbeat)
 - [ ] More style decisions: font, font size, colour scheme, night mode colours
 - [ ] Android back button to navigate instead of close app
-- [ ] Cleanup: unused imports; replace `fallbackToDestructiveMigration()` with real migrations before real data accumulates; remove any remaining legacy v1 files
+- [ ] Cleanup: unused imports (e.g. `java.sql.Timestamp` and `kotlin.time…milliseconds` in the ViewModel); replace `fallbackToDestructiveMigration()` with real migrations before real data accumulates; remove any remaining legacy v1 files
 
 Placeholder assumptions: the four time bands are fixed 6-hour blocks anchored at the start hour (Morning = start, then +6/+12/+18), and the starter presets are Work, Sleep, Gym, Social, and Dating.

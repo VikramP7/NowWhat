@@ -17,6 +17,9 @@ interface ActivityDao {
     @Query("SELECT * FROM activities")
     fun getAll(): Flow<List<Activity>>
 
+    @Query("SELECT * FROM activities WHERE id = :activityId LIMIT 1")
+    suspend fun getById(activityId: Long): Activity?
+
     @Delete
     suspend fun delete(activity: Activity)
 }

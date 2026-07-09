@@ -1,6 +1,5 @@
 package com.example.nowwhat
 
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -62,4 +61,11 @@ fun withinHourSpan(timestamp: Long, startHour: Int, endHour:Int): Boolean{
         // doesn't cross midnight
         (curHour>=startHour) && (curHour<endHour)
     }
+}
+
+fun truncateToHour(timestamp: Long): Long = (timestamp / 3_600_000) * 3_600_000
+
+fun wrapRange(hours: Int, top:Int = 23): Int {
+    val modTop = top+1
+    return ((hours%modTop)+modTop)%modTop
 }

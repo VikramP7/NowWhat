@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -35,23 +36,39 @@ object NotificationHelper {
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    fun postHourlyNotification(context: Context) {
+    fun postHourlyNotification(
+        context: Context,
+        logTimestamp: Long,
+        suggestions: List<Activity>   // 0-2 activities to show as action buttons
+        ) {
         val intent = Intent(context, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(context,
             0,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_reminder)
             .setContentTitle("NowWhat")
-            .setContentText("What did you just do? What's next?")
+            .setContentText("What did you just do?")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .build()
+        suggestions.forEachIndexed { index, activity ->
+            val actionIntent = Intent(context, NotificationActionReceiver::class.java).apply {
+                putExtra("activity_id", activity.id)
+                putExtra("timestamp", logTimestamp)
+            }
+            val actionPendingIntent = PendingIntent.getBroadcast(
+                context,
+                100 + index,    // unique request code per action — can't reuse 0
+                actionIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            builder.addAction(0, activity.name, actionPendingIntent)
+        }
 
+        val notification = builder.build()
         NotificationManagerCompat.from(context).notify(1, notification)
     }
 
@@ -72,7 +89,7 @@ object NotificationHelper {
         )
 
         // Set trigger time to be the top of the next hour
-        val triggerTime = ((System.currentTimeMillis() / 3_600_000) * 3_600_000) + 3_600_000L
+        val triggerTime = truncateToHour(System.currentTimeMillis()) + 3_600_000L
 
         alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,    // real wall-clock time, wakes the device
