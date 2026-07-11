@@ -7,15 +7,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.withTransaction
 import com.example.nowwhat.ui.theme.LightActivityColours
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -53,18 +51,13 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         seedSafeDefaultActivities()
 
         viewModelScope.launch {
-            val ticker = flow {
-                while (true) {
-                    emit(Unit)
-                    delay(60_000L)          // check each minute
-                }
-            }
-            // in the collector:
-            combine(settingsStore.dayStartHour, ticker) { startHour, _ ->
-                startHour to logicalDateOf(System.currentTimeMillis(), startHour)   // carry both
-            }
-                .distinctUntilChanged()
-                .collect { (startHour, today) -> seedDayFromSchedule(today, startHour) }
+            seedToday()
+        }
+
+        viewModelScope.launch {
+            settingsStore.dayStartHour
+                .drop(1)              // skip the initial emission
+                .collect { seedToday() }
         }
     }
 
@@ -151,6 +144,17 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         _selectedIsFuture.value = true
     }
 
+    private suspend fun seedToday(){
+        val startHour = settingsStore.dayStartHour.first()
+        val today = logicalDateOf(System.currentTimeMillis(), startHour)
+        seedDayFromSchedule(
+            logicalDate = today,
+            startHour = startHour,
+            hourEntryDao = hourEntryDao,
+            scheduleDao = scheduleDao,
+            settingsStore = settingsStore)
+    }
+
     /* ---------------------------- HOUR LOGGING FUNCTIONS ----------------------------*/
     fun logPlannedActivity(activityId: Long) {
         viewModelScope.launch {
@@ -188,7 +192,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             hourEntryDao.deleteAll()
             settingsStore.setLastSeededDay(-1L)
-            seedDayFromSchedule(logicalDateOf(System.currentTimeMillis(), dayStartHour.value), dayStartHour.value)
+            seedToday()
         }
     }
 
@@ -285,35 +289,6 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                 hourSlots[(dayStartHour + (band * 6) + offset) % 24]
             }
         }
-    }
-
-    private suspend fun seedDayFromSchedule(logicalDate: LocalDate, startHour: Int) {
-        // 1. Guard: already seeded? (DataStore marker — see below)
-        if (settingsStore.lastSeededDay.first() == logicalDate.toEpochDay()) return
-        val schedule = scheduleFlow.first()          // one-shot read of current schedule
-
-        // 2. For each of the 24 hours in this logical day...
-        for (offset in 0 until 24) {
-            val hour = (startHour + offset) % 24
-            // which weekday does this clock hour belong to?
-            val weekday = scheduleWeekdayFor(hour, logicalDate.dayOfWeek.value, startHour)
-            val planned = schedule.firstOrNull { it.dayOfWeek == weekday && it.hourOfDay == hour }
-                ?.plannedActivityId ?: continue      // no template for this slot → skip
-
-            // 3. Fill-only: skip if this timestamp already has an entry
-            val timestamp = timestampOf(logicalDate, hour, startHour)
-            val existing = hourEntryDao.getByTimestamp(timestamp)
-            when {
-                existing == null ->
-                    hourEntryDao.insert(HourEntry(timestamp, plannedActivityId = planned, actualActivityId = null))
-                existing.plannedActivityId == null ->
-                    hourEntryDao.updatePlanned(timestamp, planned)
-                else -> { /* planned already set manually — leave it */ }
-            }
-        }
-
-        // 4. Mark seeded
-        settingsStore.setLastSeededDay(logicalDate.toEpochDay())
     }
 
     /* ---------------------------- DEFAULT SCHEDULE DB FUNCTIONS ----------------------------*/

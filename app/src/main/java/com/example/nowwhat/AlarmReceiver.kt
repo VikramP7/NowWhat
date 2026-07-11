@@ -14,17 +14,29 @@ class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         scheduleNextAlarm(context)
 
-        val store = SettingsStore(context)
-        val enabled = runBlocking { store.notificationsEnabled.first() }
-        val dndStart = runBlocking { store.dndStartHour.first() }
-        val dndEnd = runBlocking { store.dndEndHour.first() }
-        val is24Hour = runBlocking { store.is24Hour.first() }
+        val settingsStore = SettingsStore(context)
+        val enabled = runBlocking { settingsStore.notificationsEnabled.first() }
+        val dndStart = runBlocking { settingsStore.dndStartHour.first() }
+        val dndEnd = runBlocking { settingsStore.dndEndHour.first() }
+        val is24Hour = runBlocking { settingsStore.is24Hour.first() }
+
+        val db = AppDatabase.getDatabase(context)
+        val hourEntryDao = db.hourEntryDao()
+        val activityDao = db.activityDao()
+        val scheduleDao = db.scheduleDao()
+
+        val startHour = runBlocking { settingsStore.dayStartHour.first() }
+        runBlocking { seedDayFromSchedule(
+            logicalDate = logicalDateOf(System.currentTimeMillis(), startHour),
+            startHour = startHour,
+            hourEntryDao = hourEntryDao,
+            scheduleDao = scheduleDao,
+            settingsStore = settingsStore
+        )}
 
         if (!enabled) return
         if (isInDndWindow(dndStart, dndEnd)) return
 
-        val hourEntryDao = AppDatabase.getDatabase(context).hourEntryDao()
-        val activityDao = AppDatabase.getDatabase(context).activityDao()
         val suggestions = mutableListOf<Activity>()
         val lastHour = truncateToHour(System.currentTimeMillis())- 3_600_000L
         val lastLastHour = lastHour - 3_600_000L
