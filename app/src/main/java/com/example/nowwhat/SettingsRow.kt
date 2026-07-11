@@ -3,8 +3,11 @@ package com.example.nowwhat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,11 +25,13 @@ import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
 fun SettingRow(
-    label: String,
+    label: String? = null,                                  // now nullable — content can replace it
     textColour: Color = TextColour,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    leading: (@Composable () -> Unit)? = null,              // NEW: optional left slot (the swatch)
+    content: (@Composable RowScope.() -> Unit)? = null,     // NEW: optional middle override (the TextField)
     trailing: @Composable () -> Unit
 ) {
     val shape = RoundedCornerShape(12.dp)
@@ -44,14 +49,22 @@ fun SettingRow(
             .padding(horizontal = 16.dp, vertical = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = textColour,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
+        if (leading != null) {
+            leading()
+            Spacer(Modifier.width(12.dp))
+        }
+        if (content != null) {
+            content()                                       // caller supplies its own weight(1f)
+        } else {
+            Text(
+                text = label ?: "",
+                style = MaterialTheme.typography.bodyLarge,
+                color = textColour,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+        }
         trailing()
     }
 }
