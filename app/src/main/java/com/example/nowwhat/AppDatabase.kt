@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [HourEntry::class, Activity::class, ScheduleEntry::class], version = 3, exportSchema = false)
+@Database(entities = [HourEntry::class, Activity::class, ScheduleEntry::class], version = 3, exportSchema = true)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun hourEntryDao(): HourEntryDao
     abstract fun activityDao(): ActivityDao
