@@ -18,6 +18,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val enabled = runBlocking { store.notificationsEnabled.first() }
         val dndStart = runBlocking { store.dndStartHour.first() }
         val dndEnd = runBlocking { store.dndEndHour.first() }
+        val is24Hour = runBlocking { store.is24Hour.first() }
 
         if (!enabled) return
         if (isInDndWindow(dndStart, dndEnd)) return
@@ -43,6 +44,6 @@ class AlarmReceiver : BroadcastReceiver() {
                 activityDao.getAll().first().firstOrNull()?.let { suggestions.add(it) }
             }
         }
-        NotificationHelper.postHourlyNotification(context, lastHour, suggestions.toList())
+        NotificationHelper.postHourlyNotification(context, lastHour, suggestions.toList(), is24Hour)
     }
 }

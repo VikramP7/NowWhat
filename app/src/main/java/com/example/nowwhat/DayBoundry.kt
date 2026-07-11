@@ -40,13 +40,14 @@ fun dayOfWeek(timestamp: Long, zone: ZoneId = ZoneId.systemDefault()): Int =
     Instant.ofEpochMilli(timestamp).atZone(zone).dayOfWeek.value
 
 fun formatHourLabel(hour: Int, is24Hour: Boolean): String {
+    val hour24Wrap = wrapRange(hour)
     return if (is24Hour) {
-        "%02d:00".format(hour)
+        "%02d:00".format(hour24Wrap)
     } else {
-        val period = if (hour < 12) "am" else "pm"
-        val h12 = when (hour % 12) {
+        val period = if (hour24Wrap < 12) "am" else "pm"
+        val h12 = when (hour24Wrap % 12) {
             0 -> 12          // 0 and 12 both map to 12 on a 12h clock
-            else -> hour % 12
+            else -> hour24Wrap % 12
         }
         "$h12$period"
     }

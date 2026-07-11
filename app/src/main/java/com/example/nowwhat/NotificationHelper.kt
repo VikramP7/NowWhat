@@ -39,7 +39,8 @@ object NotificationHelper {
     fun postHourlyNotification(
         context: Context,
         logTimestamp: Long,
-        suggestions: List<Activity>   // 0-2 activities to show as action buttons
+        suggestions: List<Activity>,   // 0-2 activities to show as action buttons
+        is24Hour: Boolean
         ) {
         val intent = Intent(context, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(context,
@@ -47,10 +48,13 @@ object NotificationHelper {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        val notificationMessage = "What did you just do from " +
+                "${formatHourLabel(hourOfDay(logTimestamp), is24Hour)} - " +
+                "${formatHourLabel(hourOfDay(logTimestamp)+1, is24Hour)}?"
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_reminder)
             .setContentTitle("NowWhat")
-            .setContentText("What did you just do?")
+            .setContentText(notificationMessage)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
