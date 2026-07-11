@@ -169,6 +169,7 @@ Done:
 - [ ] **Show the hour being logged in the notification** — surface which hour the prompt refers to (e.g. in the title/text) so it's clear at a glance. *(Planning-the-next-hour-from-the-notification is explicitly **not** wanted — the current log-only style is preferred; notification format options likewise deferred as low priority.)*
 - [ ] Retire the one-minute seeding ticker in favour of the hourly alarm as the day-change pulse (the engine now provides a natural hourly heartbeat)
 - [ ] More style decisions: font, font size, colour scheme, night mode colours
+- [ ] Unify activity settings screen to match other settings menu with SettingsRow 
 - [ ] Android back button to navigate instead of close app
 - [ ] Cleanup: unused imports (e.g. `java.sql.Timestamp` and `kotlin.time…milliseconds` in the ViewModel); replace `fallbackToDestructiveMigration()` with real migrations before real data accumulates; remove any remaining legacy v1 files
 
