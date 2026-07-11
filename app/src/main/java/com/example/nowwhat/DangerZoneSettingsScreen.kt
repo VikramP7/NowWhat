@@ -103,28 +103,8 @@ fun DangerZoneSettingsScreen(
             }
         }
 
-        pendingAction?.let { action ->
-            AlertDialog(
-                onDismissRequest = { pendingAction = null },
-                title = { Text(action.title) },
-                text = { Text(action.message) },
-                icon = {Icon(
-                    painter = painterResource(action.icId),
-                    contentDescription = null,
-                    tint = DangerRed
-                )},
-                confirmButton = {
-                    TextButton(onClick = {
-                        action.onConfirm()
-                        pendingAction = null
-                    },
-                        colors = ButtonDefaults.textButtonColors(contentColor = DangerRed))
-                    { Text("Confirm") }
-                },
-                dismissButton = {
-                    TextButton(onClick = { pendingAction = null }) { Text("Cancel") }
-                }
-            )
+        pendingAction?.let {
+            ConfirmDialog(it.title, it.message, iconId = it.icId, onConfirm = it.onConfirm, onDismiss = { pendingAction = null })
         }
     }
 }

@@ -10,6 +10,9 @@ interface HourEntryDao {
     @Insert
     suspend fun insert(entry: HourEntry)
 
+    @Insert
+    suspend fun insertAll(entries: List<HourEntry>)
+
     @Query("SELECT * FROM hour_entries WHERE timestamp = :timestamp LIMIT 1")
     suspend fun getByTimestamp(timestamp: Long): HourEntry?
 

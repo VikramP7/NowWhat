@@ -1,9 +1,12 @@
 package com.example.nowwhat
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
 import com.example.nowwhat.ui.theme.LightActivityColours
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +18,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -24,13 +29,15 @@ val DEFAULT_ACTIVITY_NAMES: List<String> = listOf("Work", "Sleep", "Gym", "Socia
 class NowWhatViewModel(application: Application) : AndroidViewModel(application) {
 
     /* ---------------------------- FLOWS AND DBs ----------------------------*/
-    private val hourEntryDao = AppDatabase.getDatabase(application).hourEntryDao()
+    private val db = AppDatabase.getDatabase(application)
+
+    private val hourEntryDao = db.hourEntryDao()
     private val entriesFlow: Flow<List<HourEntry>> = hourEntryDao.getAll()
 
-    private val activityDao = AppDatabase.getDatabase(application).activityDao()
+    private val activityDao = db.activityDao()
     private val activitiesFlow: Flow<List<Activity>> = activityDao.getAll()
 
-    private val scheduleDao = AppDatabase.getDatabase(application).scheduleDao()
+    private val scheduleDao = db.scheduleDao()
     private val scheduleFlow: Flow<List<ScheduleEntry>> = scheduleDao.getAll()
 
     private val settingsStore = SettingsStore(application)
@@ -395,6 +402,57 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
     fun setDndEndHour(value: Int) {
         viewModelScope.launch { settingsStore.setDndEndHour(value) }
+    }
+
+    /* ---------------------------- IMPORT/EXPORT JSON FUNCTIONS ----------------------------*/
+
+    fun exportTo(uri: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = try {
+                val data = BackupData(
+                    activities = activitiesFlow.first(),
+                    entries = entriesFlow.first(),
+                    schedule = scheduleFlow.first()
+                )
+                val json = toJson(data)
+                withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver
+                        .openOutputStream(uri, "wt")
+                        ?.use { it.write(json.toByteArray()) }
+                        ?: throw IOException("Couldn't open output stream")
+                }
+                true
+            } catch (e: Exception) {
+                false
+            }
+            onResult(success)
+        }
+    }
+
+    fun importFrom(uri: Uri, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = try {
+                val text = withContext(Dispatchers.IO) {
+                    getApplication<Application>().contentResolver
+                        .openInputStream(uri)
+                        ?.use { it.readBytes().decodeToString() }
+                        ?: throw IOException("Couldn't open input stream")
+                }
+                val data = fromJson(text)          // throws on a malformed file
+                db.withTransaction {
+                    hourEntryDao.deleteAll()
+                    scheduleDao.deleteAll()
+                    activityDao.deleteAll()
+                    activityDao.insertAll(data.activities)
+                    hourEntryDao.insertAll(data.entries)
+                    scheduleDao.insertAll(data.schedule)
+                }
+                true
+            } catch (e: Exception) {
+                false
+            }
+            onResult(success)
+        }
     }
 
 }

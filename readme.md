@@ -30,8 +30,8 @@ The **settings screen** is a scrollable list of setting rows, each a rounded rec
 - **Day Starts At** — a number stepper choosing the hour the day begins (see "The logical day" below)
 - **24-Hour Time** — a toggle switching all time displays between 12- and 24-hour format
 - **Notifications** → notifications settings: master on/off switch, and a do-not-disturb window (from/until hour steppers)
-- **Export/Import Data** → CSV import/export (placeholder)
-- **DANGER ZONE** → destructive actions (placeholder)
+- **Export/Import Data** → back up all data to a JSON file, or restore from one (via the system file picker)
+- **DANGER ZONE** → destructive actions, each behind a confirmation dialog (clear logged hours, reset activities, clear default schedule)
 
 The **activities editor** shows an editable list of activities — each row has a tappable colour swatch (revealing a palette to pick from), an inline text field for renaming, and a delete button — plus an "Add" button at the bottom.
 
@@ -53,9 +53,15 @@ Hourly **notifications** fire on the hour (using exact alarms) prompting you to 
 
 The notification carries **inline action buttons** — tapping one logs that activity as the *actual* for the hour that just passed, straight from the notification shade, via `NotificationActionReceiver` (which writes to Room directly and dismisses the notification). Tapping the notification body instead opens the app. Suggestions are chosen contextually: first the activity you *planned* for the hour that just passed, then (as a fallback) what you *actually* did the hour before, then a default — deduplicated, and always at least one.
 
-Two deliberate scope limits: a notification shows at most **three action buttons**, so the current design is **log-only** — planning the hour ahead from the notification would need a different mechanism (inline text reply, or tap-to-open) and is future work. Notification **format** options are also not yet built.
+One deliberate scope limit: a notification shows at most **three action buttons**, so the design is **log-only** — and this is now a settled choice, not a gap. Planning the hour ahead from the shade would need a different mechanism (inline text reply, or tap-to-open); the current log-only style is preferred and won't be extended that way. The one wanted refinement is cosmetic: surfacing *which* hour the prompt is asking about in the notification text (see TODO).
 
 **Settings:** a master on/off switch and a **do-not-disturb window** (from/until hour). When notifications are off or the current hour falls inside the DND window, the alarm still reschedules but skips posting — silencing never breaks the chain. The DND check reuses `withinHourSpan` from `DayBoundry.kt`, so it correctly handles windows that cross midnight.
+
+### Data backup (export / import)
+
+The **Export/Import** screen lets you back up everything to a single JSON file and restore it later. Both directions go through Android's **Storage Access Framework** — the OS file picker hands the app a `Uri` for exactly the one file the user chose, so no broad storage permission is needed. Serialization is hand-rolled with the built-in `org.json` (no dependency): three arrays (activities, entries, schedule) plus a `version` field for future migrations. The `ContentResolver` stream I/O runs on `Dispatchers.IO`; Room's own suspend DAOs handle their own threading.
+
+**Import is replace, not merge:** the whole database is wiped and rebuilt from the file, inside a single Room **transaction** so a mid-restore failure rolls back rather than leaving a half-wiped database. Crucially, activity **IDs are preserved** across the round-trip — because hour entries and schedule slots reference activities *by ID*, letting Room auto-generate fresh IDs on import would silently repoint every logged hour at the wrong activity. The file is parsed *before* the transaction opens, so a malformed file fails loudly and touches nothing. A colour stored as an opaque ARGB `Int` serializes as a negative number (the alpha byte sets the sign bit); this is lossless and expected. Merge-style import is possible future work but deliberately deferred to avoid ID-collision handling.
 
 ## Tech stack
 
@@ -64,6 +70,7 @@ Two deliberate scope limits: a notification shows at most **three action buttons
 - **Jetpack DataStore** (Preferences) for scalar settings (start hour, time format, seed marker)
 - **ViewModel** + **Kotlin Flow** + **StateFlow** for reactive state
 - **AlarmManager** (exact alarms) + **BroadcastReceiver**s for the self-rescheduling on-the-hour notification engine
+- **Storage Access Framework** (`ActivityResultContracts.CreateDocument`/`OpenDocument`) + `ContentResolver` for user-driven file export/import; **`org.json`** for backup serialization
 - **Material Design 3** with custom colour theme and vector drawable icons
 - Built in Android Studio; tested on a physical device over wireless ADB
 
@@ -93,7 +100,9 @@ UI component tree:
     - `ActivitiesSettingsScreen` → `ActivitiesSettings`
     - `DefaultScheduleSettingsScreen` → `WeekdayPicker` + `DaySection` + preset row
     - `NotificationsSettingsScreen` (wired: master switch + DND window)
-    - `DataSettingsScreen`, `DangerZoneSettingsScreen` (placeholders)
+    - `DataSettingsScreen` (wired: JSON export/import via SAF file pickers, with an import confirmation)
+    - `DangerZoneSettingsScreen` (wired: destructive actions, each behind a `ConfirmDialog`)
+    - `ConfirmDialog` — reusable destructive-confirmation `AlertDialog` (title, message, icon, confirm label + `onConfirm`/`onDismiss`); shared by Danger Zone and import
     - `TopBarSettings` — "Settings" title (+ optional breadcrumb path) + close/back icon
 
 ## Data model
@@ -137,6 +146,8 @@ Done:
 - **Notifications settings wired**: master on/off switch + do-not-disturb window (from/until steppers); the receiver honours both (silencing reschedules but skips posting)
 - 24-hour format now also applied to the hour steppers ("Day Starts At", DND from/until) via `formatHourLabel`; steppers gained an optional `wrap` mode (uses `wrapRange`) so time values roll 23→0 instead of clamping
 - Settings-row visual polish: raised shadow + rounded shape so each row reads as its own card; disabled rows (and their steppers) grey out via `alpha` and stop responding to input
+- **Danger Zone wired**: clear all logged hours (resets the seed marker + re-seeds today from the schedule), reset activities to defaults (trim-and-rename, IDs preserved so existing entries keep resolving), clear default schedule — each behind a reusable `ConfirmDialog` with destructive-red styling (`DangerRed`)
+- **JSON backup export/import**: single-file backup via the Storage Access Framework, `org.json` serialization with a `version` field, replace-on-import inside a Room transaction with activity-ID preservation, plus an import confirmation dialog. Round-trip verified on device (export → wipe via Danger Zone → import → identical)
 - App runs on physical device over wireless ADB
 
 ## TODO
@@ -153,9 +164,9 @@ Done:
 - [x] Default schedule: per-weekday recurring planned activities that auto-populate new days
 - [x] Hourly notification engine: exact alarms + reschedule-on-fire + boot receiver + `POST_NOTIFICATIONS` permission + notification channel + inline action buttons (log actual from the shade)
 - [x] Notifications settings: master switch + do-not-disturb window *(format options and planning-from-notification deferred — see below)*
-- [ ] **Danger zone in settings: clear all data / reset database (screen scaffolded, not wired; `ScheduleDao.deleteAll()` already exists)** ← next priority
-- [ ] CSV export/import via the system share sheet (screen scaffolded, not wired)
-- [ ] Notification enhancements deferred from the engine work: **planning the next hour from the notification** (blocked by the 3-button limit — needs inline text reply or tap-to-open), and **notification format options**
+- [x] Danger zone in settings: clear logged hours / reset activities / clear default schedule, each behind a confirmation dialog
+- [x] Data export/import: single-file **JSON** backup via the system file picker (replace-on-import, IDs preserved, transactional) — *note: implemented as JSON via the Storage Access Framework rather than CSV via the share sheet, for lossless escaping and one-file simplicity*
+- [ ] **Show the hour being logged in the notification** — surface which hour the prompt refers to (e.g. in the title/text) so it's clear at a glance. *(Planning-the-next-hour-from-the-notification is explicitly **not** wanted — the current log-only style is preferred; notification format options likewise deferred as low priority.)*
 - [ ] Retire the one-minute seeding ticker in favour of the hourly alarm as the day-change pulse (the engine now provides a natural hourly heartbeat)
 - [ ] More style decisions: font, font size, colour scheme, night mode colours
 - [ ] Android back button to navigate instead of close app

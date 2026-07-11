@@ -11,6 +11,9 @@ interface ScheduleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSlot(entry: ScheduleEntry)
 
+    @Insert
+    suspend fun insertAll(scheduleEntries: List<ScheduleEntry>)
+
     @Query("SELECT * FROM schedule_entries")
     fun getAll(): Flow<List<ScheduleEntry>>
 
