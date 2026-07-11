@@ -2,6 +2,7 @@ package com.example.nowwhat
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +20,11 @@ enum class AppScreenState {
     SETTINGS_DATA,
     SETTINGS_NOTIFICATIONS
 }
+fun AppScreenState.parent(): AppScreenState? = when (this) {
+    AppScreenState.MAIN -> null                 // root — no parent, let the OS handle back
+    AppScreenState.SETTINGS -> AppScreenState.MAIN
+    else -> AppScreenState.SETTINGS             // every sub-screen returns to the settings list
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,6 +38,11 @@ class MainActivity : ComponentActivity() {
             val viewModel: NowWhatViewModel = viewModel()
 
             NowWhatTheme {
+                val back = screenState.value.parent()
+                BackHandler(enabled = back != null) {
+                    back?.let { screenState.value = it }
+                }
+
                 when(screenState.value){
                     AppScreenState.MAIN -> NowWhatScreen(
                         viewModel = viewModel,
