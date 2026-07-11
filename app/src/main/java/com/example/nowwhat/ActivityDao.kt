@@ -22,4 +22,7 @@ interface ActivityDao {
 
     @Delete
     suspend fun delete(activity: Activity)
+
+    @Query("DELETE FROM activities")
+    suspend fun deleteAll()
 }

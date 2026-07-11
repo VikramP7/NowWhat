@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.nowwhat.ui.theme.BoxFillGrey
@@ -22,6 +23,7 @@ import com.example.nowwhat.ui.theme.TextColour
 @Composable
 fun SettingRow(
     label: String,
+    textColour: Color = TextColour,
     enabled: Boolean = true,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
@@ -45,7 +47,7 @@ fun SettingRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyLarge,
-            color = TextColour,
+            color = textColour,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)

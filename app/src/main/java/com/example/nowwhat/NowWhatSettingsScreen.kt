@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.nowwhat.ui.theme.DangerRed
 import com.example.nowwhat.ui.theme.OffWhite
 import com.example.nowwhat.ui.theme.TextColour
 
@@ -105,6 +106,7 @@ fun NowWhatSettingsScreen(
 
             SettingRow(
                 label = "DANGER ZONE",
+                textColour = DangerRed,
                 onClick = {onNavigate(AppScreenState.SETTINGS_DANGERZONE)}
             ) {
                 Icon(

@@ -23,6 +23,8 @@ val Almond = Color(0xFFDCCBBC)
 val InkBlack = Color(0xFF00171F)
 val TextColour = Color(0xFF5E4631)
 
+val DangerRed = Color(0xFFB7382A)
+
 val DeepBlue = Color(0xFF003459)
 val SkyBlue = Color(0xFF00A7E1)
 val Orange = Color(0xFFE55934)

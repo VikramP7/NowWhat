@@ -18,8 +18,12 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+
+val DEFAULT_ACTIVITY_NAMES: List<String> = listOf("Work", "Sleep", "Gym", "Social", "Dating")
+
 class NowWhatViewModel(application: Application) : AndroidViewModel(application) {
 
+    /* ---------------------------- FLOWS AND DBs ----------------------------*/
     private val hourEntryDao = AppDatabase.getDatabase(application).hourEntryDao()
     private val entriesFlow: Flow<List<HourEntry>> = hourEntryDao.getAll()
 
@@ -36,17 +40,10 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     val selectedTimestamp: StateFlow<Long> = _selectedTimestamp
     val selectedIsFuture: StateFlow<Boolean> = _selectedIsFuture
 
+
+    /* ---------------------------- INIT ----------------------------*/
     init {
-        viewModelScope.launch {
-            val existing = activityDao.getAll().first()
-            if (existing.isEmpty()) {
-                activityDao.insert(Activity("Work", LightActivityColours[0]))
-                activityDao.insert(Activity("Sleep", LightActivityColours[1]))
-                activityDao.insert(Activity("Gym", LightActivityColours[2]))
-                activityDao.insert(Activity("Social", LightActivityColours[3]))
-                activityDao.insert(Activity("Dating", LightActivityColours[4]))
-            }
-        }
+        seedSafeDefaultActivities()
 
         viewModelScope.launch {
             val ticker = flow {
@@ -180,6 +177,13 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun clearAllHourEntries(){
+        viewModelScope.launch {
+            hourEntryDao.deleteAll()
+            settingsStore.setLastSeededDay(-1L)
+            seedDayFromSchedule(logicalDateOf(System.currentTimeMillis(), dayStartHour.value), dayStartHour.value)
+        }
+    }
 
     /* ---------------------------- ACTIVITY FUNCTIONS ----------------------------*/
     fun addActivity(activity: Activity){
@@ -197,6 +201,39 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     fun removeActivity(activity: Activity){
         viewModelScope.launch {
             activityDao.delete(activity)
+        }
+    }
+
+    fun resetActivities(){
+        viewModelScope.launch {
+            val curActivities = activitiesFlow.first()
+            DEFAULT_ACTIVITY_NAMES.forEachIndexed  { index, activityName ->
+                val activity = curActivities.getOrNull(index)
+                if (activity == null){
+                    activityDao.insert(Activity(
+                        name = activityName,
+                        colour = LightActivityColours[index])
+                    )
+                }else{
+                    activityDao.updateActivity(
+                        name = activityName,
+                        colour = LightActivityColours[index],
+                        activityId = activity.id
+                    )
+                }
+            }
+            curActivities.drop(DEFAULT_ACTIVITY_NAMES.size).forEach { activityDao.delete(it) }
+        }
+    }
+
+    private fun seedSafeDefaultActivities(){
+        viewModelScope.launch {
+            val existing = activityDao.getAll().first()
+            if (existing.isEmpty()) {
+                DEFAULT_ACTIVITY_NAMES.forEachIndexed  { index, activityName ->
+                    activityDao.insert(Activity(activityName, LightActivityColours[index]))
+                }
+            }
         }
     }
 
@@ -282,6 +319,12 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     fun clearScheduleSlot(dayOfWeek: Int, hourOfDay: Int){
         viewModelScope.launch {
             scheduleDao.clearSlot(dayOfWeek, hourOfDay)
+        }
+    }
+
+    fun clearAllScheduleSlots(){
+        viewModelScope.launch {
+            scheduleDao.deleteAll()
         }
     }
 
