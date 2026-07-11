@@ -77,14 +77,14 @@ fun DataSettingsScreen(
                 label = "Export Backup",
                 onClick = { exportLauncher.launch("nowwhat-backup.json") }
             ) {
-                Icon(painterResource(R.drawable.ic_forward), null, tint = TextColour)
+                Icon(painterResource(R.drawable.ic_fileexport), null, tint = TextColour)
             }
 
             SettingRow(
                 label = "Import Backup",
                 onClick = { showImportConfirm = true}
             ) {
-                Icon(painterResource(R.drawable.ic_forward), null, tint = TextColour)
+                Icon(painterResource(R.drawable.ic_filesave), null, tint = TextColour)
             }
         }
 
