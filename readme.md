@@ -2,8 +2,9 @@
 
 # What Now? - README
 
-## Project Overview
-![Image app main screen](./pics/AppMainScreen.png)  
+## Project Overview 
+<img src="./pics/AppMainScreen.png" width="40%" alt="Description">  
+  
 *Photo of finished project*
 
 A personal Android app for tracking how you actually spend each hour of your day. Every hour, on the hour, NowWhat asks two questions, what did you just do and what will you do next, then builds a colour-coded picture of your days from your answers.
