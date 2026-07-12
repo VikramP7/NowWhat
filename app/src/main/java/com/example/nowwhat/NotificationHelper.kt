@@ -51,7 +51,7 @@ object NotificationHelper {
                 "${formatHourLabel(hourOfDay(logTimestamp), is24Hour)} - " +
                 "${formatHourLabel(hourOfDay(logTimestamp)+1, is24Hour)}?"
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_reminder)
+            .setSmallIcon(R.drawable.ic_logo)
             .setContentTitle("NowWhat")
             .setContentText(notificationMessage)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
