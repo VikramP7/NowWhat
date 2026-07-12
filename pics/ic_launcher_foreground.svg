@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <!--
+    NowWhat launcher icon — FOREGROUND layer only (transparent background).
+    Motif: the app's signature colour-coded hour blocks. Three filled blocks
+    (a logged/planned hour) plus one outline-only block (planned but not yet done),
+    echoing the outline-vs-fill idea from the main grid.
+
+    All artwork sits inside the central ~66dp "safe zone" of the 108dp canvas,
+    so round / squircle / teardrop device masks won't crop it.
+
+    Pair this with a solid BACKGROUND layer. Suggested background: warm brown #5E4631
+    (the app's ink colour) so the bright blocks pop. Colours below are from the
+    app's activity palette; swap freely.
+  -->
+  <g>
+    <rect x="32" y="32" width="20" height="20" rx="5" fill="#E55934"/>
+    <rect x="56" y="32" width="20" height="20" rx="5" fill="#00A7E1"/>
+    <rect x="32" y="56" width="20" height="20" rx="5" fill="#53DD6C"/>
+    <rect x="56" y="56" width="20" height="20" rx="5" fill="none" stroke="#F8F5F2" stroke-width="3"/>
+  </g>
+</svg>
