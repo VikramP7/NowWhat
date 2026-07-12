@@ -25,7 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.nowwhat.ui.theme.CancelGrey
-import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.TextColour
 import java.time.Instant
 import java.time.ZoneId
@@ -55,6 +55,8 @@ fun EntryPanel(
     val startTime = dateTime.format(hourFormatter)
     val endTime = dateTime.plusHours(1).format(hourFormatter)
 
+    val panelColour = BackgroundColour
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -64,14 +66,14 @@ fun EntryPanel(
                 start = 16.dp,
                 end = 16.dp,
                 bottom = 16.dp)
-            .background(OffWhite)
+            .background(BackgroundColour)
             .drawWithContent {
                 drawContent()
                 drawRect(
                     brush = Brush.horizontalGradient(
                         colorStops = arrayOf(
                             0.95f to Color.Transparent,
-                            1f to OffWhite
+                            1f to panelColour
                         )
                     )
                 )

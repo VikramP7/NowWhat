@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.TextColour
 
 
@@ -23,7 +23,7 @@ fun TopBar(
     TopAppBar(
         title = { Text("NowWhat") },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = OffWhite,
+            containerColor = BackgroundColour,
             titleContentColor = TextColour,
             actionIconContentColor = TextColour
         ),

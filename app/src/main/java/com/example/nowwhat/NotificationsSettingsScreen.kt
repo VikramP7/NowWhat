@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nowwhat.NotificationHelper.scheduleNextAlarm
-import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
@@ -55,7 +55,7 @@ fun NotificationsSettingsScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = OffWhite,
+        containerColor = BackgroundColour,
         topBar = { TopBarSettings(
             onClick = {onNavigate(AppScreenState.SETTINGS)},
             path = " > Notifications"
@@ -75,10 +75,10 @@ fun NotificationsSettingsScreen(
                         }
                     },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = OffWhite,
+                        checkedThumbColor = BackgroundColour,
                         checkedTrackColor = TextColour,
                         uncheckedThumbColor = TextColour,
-                        uncheckedTrackColor = OffWhite,
+                        uncheckedTrackColor = BackgroundColour,
                         uncheckedBorderColor = TextColour
                     )
                 )

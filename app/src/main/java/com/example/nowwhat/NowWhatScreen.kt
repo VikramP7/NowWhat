@@ -11,7 +11,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.BackgroundColour
 
 @Composable
 fun NowWhatScreen(
@@ -31,7 +31,7 @@ fun NowWhatScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = OffWhite,
+        containerColor = BackgroundColour,
         topBar = { TopBar(onClick = {onNavigate(AppScreenState.SETTINGS)}) },
         bottomBar = {
             EntryPanel(
@@ -53,6 +53,7 @@ fun NowWhatScreen(
         }
     ) { innerPadding ->
         val bottomBarPadding = innerPadding.calculateBottomPadding()
+        val fadeColour = BackgroundColour
         HoursView(
             modifier = Modifier
                 .fillMaxSize()
@@ -68,7 +69,7 @@ fun NowWhatScreen(
                     val fadeHeightBottom = 32.dp.toPx()
                     drawRect(
                         brush = Brush.verticalGradient(
-                            colors = listOf(OffWhite, OffWhite.copy(alpha = 0f)),
+                            colors = listOf(fadeColour, fadeColour.copy(alpha = 0f)),
                             startY = 0f,
                             endY = fadeHeightTop
                         )
@@ -77,7 +78,7 @@ fun NowWhatScreen(
                     val bottomBarPx = bottomBarPadding.toPx()
                     drawRect(
                         brush = Brush.verticalGradient(
-                            colors = listOf(OffWhite.copy(alpha = 0f), OffWhite),
+                            colors = listOf(fadeColour.copy(alpha = 0f), fadeColour),
                             startY = size.height - fadeHeightBottom,
                             endY = size.height
                         )

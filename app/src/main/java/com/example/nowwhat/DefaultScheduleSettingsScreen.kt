@@ -21,7 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nowwhat.ui.theme.CancelGrey
-import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.TextColour
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -43,7 +43,7 @@ fun DefaultScheduleSettingsScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = OffWhite,
+        containerColor = BackgroundColour,
         topBar = { TopBarSettings(
             onClick = {onNavigate(AppScreenState.SETTINGS)},
             path = " > Default Schedule"

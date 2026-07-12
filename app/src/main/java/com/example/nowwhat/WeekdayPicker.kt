@@ -16,7 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
@@ -49,7 +49,7 @@ fun WeekdayPicker(
                 Text(
                     text = label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (isSelected) OffWhite else TextColour
+                    color = if (isSelected) BackgroundColour else TextColour
                 )
             }
         }

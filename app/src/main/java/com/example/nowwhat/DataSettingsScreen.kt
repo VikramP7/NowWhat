@@ -20,7 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
@@ -63,7 +63,7 @@ fun DataSettingsScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = OffWhite,
+        containerColor = BackgroundColour,
         topBar = { TopBarSettings(
             onClick = { onNavigate(AppScreenState.SETTINGS) },
             path = " > Import/Export Data"

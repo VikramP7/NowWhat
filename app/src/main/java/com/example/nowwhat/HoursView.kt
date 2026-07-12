@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.BackgroundColour
 import java.time.Instant
 import java.time.ZoneId
 
@@ -35,7 +35,7 @@ fun HoursView(
     val selectedHour = selectedZoned.hour
 
     LazyColumn(
-        modifier = modifier.fillMaxWidth().background(OffWhite),
+        modifier = modifier.fillMaxWidth().background(BackgroundColour),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item { Spacer(modifier = Modifier.height(10.dp)) }

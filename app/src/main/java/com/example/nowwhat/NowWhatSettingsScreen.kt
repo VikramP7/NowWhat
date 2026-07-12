@@ -16,7 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nowwhat.ui.theme.DangerRed
-import com.example.nowwhat.ui.theme.OffWhite
+import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
@@ -31,7 +31,7 @@ fun NowWhatSettingsScreen(
 
     Scaffold(
         modifier = modifier,
-        containerColor = OffWhite,
+        containerColor = BackgroundColour,
         topBar = { TopBarSettings(onClick = {onNavigate(AppScreenState.MAIN)}) }
     ) { innerPadding ->
         Column(
@@ -73,10 +73,10 @@ fun NowWhatSettingsScreen(
                     checked = is24Hour,
                     onCheckedChange = { viewModel.setIs24Hour(it) },
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = OffWhite,
+                        checkedThumbColor = BackgroundColour,
                         checkedTrackColor = TextColour,
                         uncheckedThumbColor = TextColour,
-                        uncheckedTrackColor = OffWhite,
+                        uncheckedTrackColor = BackgroundColour,
                         uncheckedBorderColor = TextColour
                     )
                 )
