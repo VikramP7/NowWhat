@@ -42,7 +42,7 @@ The **default schedule editor** lets you define a recurring weekly plan. A row o
 
 NowWhat isn't on the Play Store; it installs as a standalone APK. To try it on an Android phone (Android 8.0 / API 26 or newer):
 
-1. Download the latest `app-debug.apk` from the [Releases](../../releases) page of this repository.
+1. Download the latest `NowWhat.apk` from the [Releases](../../releases) page of this repository.
 2. Copy it to the phone, or download it directly on the device.
 3. Open the file. Android will ask permission to install from this source: allow "Install unknown apps" for whichever app you used to open it (your browser or file manager), then confirm the install.
 4. Open NowWhat. On first launch it asks for notification permission; grant it so the hourly prompts can appear.
