@@ -1,6 +1,6 @@
 *<div align="right"> Vikram Procter | June 19, 2026 </div>*
 
-# What Now? - README
+# NowWhat? - README
 
 ## Project Overview 
 <img src="./pics/AppMainScreen.png" width="40%" alt="Description">  
