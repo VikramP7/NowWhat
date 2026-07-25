@@ -13,6 +13,21 @@ A personal Android app for tracking how you actually spend each hour of your day
 
 Instead of free-text journaling, you log each hour by tapping a **preset activity** (for example: Work, Sleep, Gym, Social, Dating), each with its own colour. Over time you get an at-a-glance map of where your hours go, and how often your plans matched reality.
 
+## Installing the app
+
+NowWhat isn't on the Play Store; it installs as a standalone APK. To try it on an Android phone (Android 8.0 / API 26 or newer):
+
+1. Download the latest `app-debug.apk` from the [Releases](../../releases) page of this repository.
+2. Copy it to the phone, or download it directly on the device.
+3. Open the file. Android will ask permission to install from this source: allow "Install unknown apps" for whichever app you used to open it (your browser or file manager), then confirm the install.
+4. Open NowWhat. On first launch it asks for notification permission; grant it so the hourly prompts can appear.
+
+To build the APK yourself:
+
+1. Open the project in Android Studio and let Gradle sync.
+2. Run **Build → Build App Bundle(s) / APK(s) → Build APK(s)**, or from a terminal in the project root run `./gradlew assembleDebug`.
+3. The APK lands at `app/build/outputs/apk/debug/app-debug.apk`. This debug build is signed with the local debug key and installs directly, which is all that's needed for sharing a demo. A Play Store submission would instead need a signed release build (see Android Studio's **Build → Generate Signed Bundle / APK** wizard).
+
 ## What it looks like
 
 The main screen, top to bottom:
@@ -37,21 +52,6 @@ The **settings screen** is a scrollable list of setting rows, each a rounded rec
 The **activities editor** shows an editable list of activities styled as settings-style cards. Each card has a tappable colour swatch (revealing a palette to pick from), an inline text field for renaming, and a delete button, plus an "Add" button at the bottom. The list scrolls clear of the keyboard when a name field is focused.
 
 The **default schedule editor** lets you define a recurring weekly plan. A row of seven day-chips (Mo–Su) selects which weekday you're editing; below it a grid identical to the main hours view shows that weekday's planned activities. Tap an hour box to select it, then tap a preset to set (or Clear to remove) the planned activity for that slot. The header shows the selected hour and which weekday it belongs to.
-
-## Installing the app
-
-NowWhat isn't on the Play Store; it installs as a standalone APK. To try it on an Android phone (Android 8.0 / API 26 or newer):
-
-1. Download the latest `app-debug.apk` from the [Releases](../../releases) page of this repository.
-2. Copy it to the phone, or download it directly on the device.
-3. Open the file. Android will ask permission to install from this source: allow "Install unknown apps" for whichever app you used to open it (your browser or file manager), then confirm the install.
-4. Open NowWhat. On first launch it asks for notification permission; grant it so the hourly prompts can appear.
-
-To build the APK yourself:
-
-1. Open the project in Android Studio and let Gradle sync.
-2. Run **Build → Build App Bundle(s) / APK(s) → Build APK(s)**, or from a terminal in the project root run `./gradlew assembleDebug`.
-3. The APK lands at `app/build/outputs/apk/debug/app-debug.apk`. This debug build is signed with the local debug key and installs directly, which is all that's needed for sharing a demo. A Play Store submission would instead need a signed release build (see Android Studio's **Build → Generate Signed Bundle / APK** wizard).
 
 ## How it works
 
