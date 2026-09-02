@@ -199,6 +199,8 @@ Done:
 - [x] Android back button to navigate instead of close the app
 - [x] Cleanup: unused imports in touched files removed; legacy `ActivitiesSettings.kt` deleted after inlining
 - [x] Enable Room schema export and commit the v3 baseline (migration-readiness)
+- [ ] Add metrics page in settings to show analysis of how time is spent. Total hours (or percentage) spent on each activity; Planned vs. actual by activity confusion matrix; Daily/weekly patterns/changes; Weekday vs. weekend differences; Sleep duration and consistency; Hours that weren't logged
+- [ ] Daily Synopsis a new table in the database that holds a short diary entry like string for each day, this would come with a setting to enable notifications for it 
 
 Deferred (out of scope for this build, but noted for anyone picking it up):
 
