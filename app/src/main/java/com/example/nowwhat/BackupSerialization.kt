@@ -3,12 +3,13 @@ package com.example.nowwhat
 import org.json.JSONArray
 import org.json.JSONObject
 
-private const val BACKUP_VERSION = 1
+private const val BACKUP_VERSION = 2
 
 data class BackupData(
     val activities: List<Activity>,
     val entries: List<HourEntry>,
-    val schedule: List<ScheduleEntry>
+    val schedule: List<ScheduleEntry>,
+    val notes: List<Note>
 )
 fun toJson(data: BackupData): String{
     val root = JSONObject()
@@ -16,6 +17,7 @@ fun toJson(data: BackupData): String{
     val activitiesJsonArr = JSONArray()
     val entriesJsonArr = JSONArray()
     val scheduleJsonArr = JSONArray()
+    val noteJsonArr = JSONArray()
 
     data.activities.forEach { activity ->
         val activityJson = JSONObject()
@@ -46,9 +48,18 @@ fun toJson(data: BackupData): String{
         scheduleJsonArr.put(scheduleEntryJson)
     }
 
+    data.notes.forEach { note ->
+        val noteJson = JSONObject()
+        noteJson.put("epochDay", note.epochDay)
+        noteJson.put("text", note.text)
+
+        noteJsonArr.put(noteJson)
+    }
+
     root.put("activities", activitiesJsonArr)
     root.put("entries", entriesJsonArr)
     root.put("schedule", scheduleJsonArr)
+    root.put("note", noteJsonArr)
 
     return root.toString()
 }
@@ -59,6 +70,7 @@ fun fromJson(text: String): BackupData {
     val activitiesJsonArr = root.getJSONArray("activities")
     val entriesJsonArr = root.getJSONArray("entries")
     val scheduleJsonArr = root.getJSONArray("schedule")
+    val noteJsonArr = root.getJSONArray("notes")
 
     val activities = mutableListOf<Activity>()
     for (i in 0 ..< activitiesJsonArr.length()){
@@ -95,5 +107,15 @@ fun fromJson(text: String): BackupData {
         schedule.add(scheduleEntry)
     }
 
-    return BackupData(activities, entries, schedule)
+    val notes = mutableListOf<Note>()
+    for (i in 0 ..< noteJsonArr.length()){
+        val noteJsonObj = noteJsonArr.getJSONObject(i)
+        val note = Note(
+            epochDay = noteJsonObj.getLong("epochDay"),
+            text = noteJsonObj.getString("text"),
+        )
+        notes.add(note)
+    }
+
+    return BackupData(activities, entries, schedule, notes)
 }

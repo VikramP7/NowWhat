@@ -39,6 +39,28 @@ fun NowWhatSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SettingRow(
+                label = "See Statistics",
+                onClick = {onNavigate(AppScreenState.SETTINGS_STATISTICS)}
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_forward),
+                    contentDescription = null,
+                    tint = TextColour
+                )
+            }
+
+            SettingRow(
+                label = "Edit Notes",
+                onClick = {onNavigate(AppScreenState.SETTINGS_NOTES)}
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_forward),
+                    contentDescription = null,
+                    tint = TextColour
+                )
+            }
+
+            SettingRow(
                 label = "Edit Activities",
                 onClick = {onNavigate(AppScreenState.SETTINGS_ACTIVITIES)}
             ) {

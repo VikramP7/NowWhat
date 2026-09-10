@@ -200,12 +200,10 @@ Done:
 - [x] Cleanup: unused imports in touched files removed; legacy `ActivitiesSettings.kt` deleted after inlining
 - [x] Enable Room schema export and commit the v3 baseline (migration-readiness)
 - [ ] Add metrics page in settings to show analysis of how time is spent. Total hours (or percentage) spent on each activity; Planned vs. actual by activity confusion matrix; Daily/weekly patterns/changes; Weekday vs. weekend differences; Sleep duration and consistency; Hours that weren't logged
-- [ ] Daily Synopsis a new table in the database that holds a short diary entry like string for each day, this would come with a setting to enable notifications for it 
-
-Deferred (out of scope for this build, but noted for anyone picking it up):
-
+- [ ] Daily Synopsis a new table in the database that holds a short diary entry like string for each day, this would come with a setting to enable notifications for it. Will need to write database migration.
 - [ ] Write a real `@AutoMigration` the next time an entity changes, and drop `fallbackToDestructiveMigration` once migrations cover every version path
 - [ ] Merge-style import (currently replace-only); would need activity-ID-collision handling
-- [ ] Fully configurable time bands (currently fixed 6-hour blocks anchored at the start hour)
+- [ ] BUG FIX settings menu rows rows are different sizes the ones with controls are taller than the others (eg. Day Starts At, 24-Hour Time)
+
 
 Placeholder assumptions: the four time bands are fixed 6-hour blocks anchored at the start hour (Morning = start, then +6/+12/+18), and the starter presets are Work, Sleep, Gym, Social, and Dating.

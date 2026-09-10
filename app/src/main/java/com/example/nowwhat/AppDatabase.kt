@@ -1,15 +1,21 @@
 package com.example.nowwhat
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [HourEntry::class, Activity::class, ScheduleEntry::class], version = 3, exportSchema = true)
+@Database(
+    entities = [HourEntry::class, Activity::class, ScheduleEntry::class, Note::class],
+    version = 4, exportSchema = true,
+    autoMigrations = [AutoMigration(from = 3, to = 4)]
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun hourEntryDao(): HourEntryDao
     abstract fun activityDao(): ActivityDao
     abstract fun scheduleDao(): ScheduleDao
+    abstract fun noteDao(): NoteDao
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null

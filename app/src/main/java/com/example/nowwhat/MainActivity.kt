@@ -14,6 +14,8 @@ import com.example.nowwhat.ui.theme.NowWhatTheme
 enum class AppScreenState {
     MAIN,
     SETTINGS,
+    SETTINGS_STATISTICS,
+    SETTINGS_NOTES,
     SETTINGS_ACTIVITIES,
     SETTINGS_DEFAULTSCHEDULE,
     SETTINGS_DANGERZONE,
@@ -52,6 +54,16 @@ class MainActivity : ComponentActivity() {
                     AppScreenState.SETTINGS -> NowWhatSettingsScreen(
                         viewModel = viewModel,
                         onNavigate = { nextScreenState -> screenState.value = nextScreenState}
+                    )
+
+                    AppScreenState.SETTINGS_STATISTICS -> StatisticsSettingsScreen(
+                        viewModel = viewModel,
+                        onNavigate = {nextScreenState -> screenState.value = nextScreenState}
+                    )
+
+                    AppScreenState.SETTINGS_NOTES -> NotesSettingsScreen(
+                        viewModel = viewModel,
+                        onNavigate = {nextScreenState -> screenState.value = nextScreenState}
                     )
 
                     AppScreenState.SETTINGS_ACTIVITIES -> ActivitiesSettingsScreen(
