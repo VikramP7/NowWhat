@@ -49,9 +49,27 @@ fun DangerZoneSettingsScreen(
                 onClick = {
                     pendingAction = DangerAction(
                         title = "Delete ALL logged hours?",
-                        message = "This Permanently deletes every logged hour. Your activities and schedule stay. This can't be undone!",
+                        message = "This PERMANENTLY deletes every logged hour. Your activities, notes, and schedule stay. This can't be undone!",
                         icId = R.drawable.ic_warning,
                         onConfirm = {viewModel.clearAllHourEntries() }
+                    )
+                }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_warning),
+                    contentDescription = null,
+                    tint = DangerRed
+                )
+            }
+
+            SettingRow(
+                label = "Delete All Logged Notes",
+                onClick = {
+                    pendingAction = DangerAction(
+                        title = "Delete ALL logged notes?",
+                        message = "This PERMANENTLY deletes every logged note. Your hours, activities and schedule stay. This can't be undone!",
+                        icId = R.drawable.ic_warning,
+                        onConfirm = {viewModel.deleteAllNotes() }
                     )
                 }
             ) {
