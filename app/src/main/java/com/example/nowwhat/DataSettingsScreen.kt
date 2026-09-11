@@ -91,7 +91,7 @@ fun DataSettingsScreen(
         if (showImportConfirm) {
             ConfirmDialog(
                 title = "Import backup?",
-                message = "This replaces ALL current data: activities, hours, and schedule with the backup file. This can't be undone.",
+                message = "This replaces ALL current data: activities, hours, notes, and schedule with the backup file. This can't be undone.",
                 confirmLabel = "Choose file",
                 onConfirm = { importLauncher.launch(arrayOf("application/json")) },
                 onDismiss = { showImportConfirm = false }

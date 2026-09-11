@@ -38,6 +38,9 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     private val scheduleDao = db.scheduleDao()
     private val scheduleFlow: Flow<List<ScheduleEntry>> = scheduleDao.getAll()
 
+    private val noteDao = db.noteDao()
+    private val notesFlow: Flow<List<Note>> = noteDao.getAll()
+
     private val settingsStore = SettingsStore(application)
 
     private val _selectedTimestamp = MutableStateFlow(defaultTimestamp())
@@ -62,8 +65,8 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /* ---------------------------- APP VALs ----------------------------*/
-    val days = combine(entriesFlow, activitiesFlow, settingsStore.dayStartHour) { entries, activities, startHour ->
-        transformIntoDays(entries, activities, startHour)
+    val days = combine(entriesFlow, activitiesFlow, notesFlow, settingsStore.dayStartHour) { entries, activities, notes, startHour ->
+        transformIntoDays(entries, activities, notes, startHour)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -76,35 +79,41 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         initialValue = emptyList()
     )
 
-    /* ---------------------------- HOUR LOGGING HELPER FUNCTIONS ----------------------------*/
-    private fun transformIntoDays(entries: List<HourEntry>, activities: List<Activity>, dayStartHour: Int): List<Day> {
-        //if (entries.isEmpty()) return emptyList()
+    val notes = notesFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
+    /* ---------------------------- HOUR LOGGING HELPER FUNCTIONS ----------------------------*/
+    private fun transformIntoDays(entries: List<HourEntry>, activities: List<Activity>, notes: List<Note>, dayStartHour: Int): List<Day> {
         // Build a lookup map by activityId to Activity object
         val activityMap: Map<Long, Activity> = activities.associateBy { it.id }
 
+        // Build a lookup map by Note's Epoch Day to Note
+        val noteMap: Map<LocalDate, Note> = notes.associateBy { LocalDate.ofEpochDay(it.epochDay) }
+
         // Group entries by date
         // Convert each timestamp to a LocalDate
-        val grouped: Map<LocalDate, List<HourEntry>> = entries.groupBy { entry ->
+        val groupedEntryMap: Map<LocalDate, List<HourEntry>> = entries.groupBy { entry ->
             logicalDateOf(entry.timestamp, dayStartHour)
         }
 
-        // synthesizing an empty day if no entries have been made for that day yet
+        // Create a LocalDate for today to add to set if not included in entries.
         val today = logicalDateOf(System.currentTimeMillis(), dayStartHour)
-        val groupedWithToday =
-            if (grouped.contains(today)) grouped
-            else grouped+(today to emptyList())
+
+        // Create a set for all dates that get a row in the view (days with entries, days with notes, and today)
+        val validDaysSet: Set<LocalDate> = groupedEntryMap.keys + noteMap.keys + today
 
         // For each date, build a Day object
         val formatter = DateTimeFormatter.ofPattern("EEEE · MMM d")
 
-        return groupedWithToday.entries.sortedByDescending { it.key }.map { (date, dayEntries) ->
-
+        return validDaysSet.sortedDescending().map {date ->
             // Build 24-hour slots, one per hour, all starting null
             val hourSlots = arrayOfNulls<HourSlot>(24)
 
             // Place each entry into the correct hour slot
-            dayEntries.forEach { entry ->
+            groupedEntryMap[date].orEmpty().forEach { entry ->
                 val hour = hourOfDay(entry.timestamp)
 
                 hourSlots[hour] = HourSlot(
@@ -121,7 +130,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                 }
             }
 
-            Day(date = date.format(formatter), hourRows = rows, localDate = date)
+            Day(date = date.format(formatter), hourRows = rows, localDate = date, note = noteMap[date]?.text)
         }
     }
 
@@ -323,6 +332,35 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         clearScheduleSlot(weekday, hour)
     }
 
+    /* ---------------------------- NOTE DB FUNCTIONS ----------------------------*/
+    private fun setNote(note: Note){
+        viewModelScope.launch {
+            noteDao.upsert(note)
+        }
+    }
+
+    private fun deleteNote(epochDay: Long){
+        viewModelScope.launch {
+            noteDao.deleteNote(epochDay = epochDay)
+        }
+    }
+
+    fun deleteAllNotes(){
+        viewModelScope.launch {
+            noteDao.deleteAll()
+        }
+    }
+
+    /* ---------------------------- NOTES HELPER FUNCTIONS ----------------------------*/
+    fun saveNote(epochDay: Long, text: String){
+        val textTrim = text.trim()
+        if(textTrim.isNotEmpty()){
+            setNote(Note(epochDay,textTrim))
+        }else{
+            deleteNote(epochDay)
+        }
+    }
+
     /* ---------------------------- SETTINGS VALs ----------------------------*/
     val is24Hour = settingsStore.is24Hour.stateIn(
         scope = viewModelScope,
@@ -387,7 +425,8 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                 val data = BackupData(
                     activities = activitiesFlow.first(),
                     entries = entriesFlow.first(),
-                    schedule = scheduleFlow.first()
+                    schedule = scheduleFlow.first(),
+                    notes = notesFlow.first()
                 )
                 val json = toJson(data)
                 withContext(Dispatchers.IO) {
@@ -418,9 +457,12 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                     hourEntryDao.deleteAll()
                     scheduleDao.deleteAll()
                     activityDao.deleteAll()
-                    activityDao.insertAll(data.activities)
+                    noteDao.deleteAll()
+
                     hourEntryDao.insertAll(data.entries)
                     scheduleDao.insertAll(data.schedule)
+                    activityDao.insertAll(data.activities)
+                    noteDao.insertAll(data.notes)
                 }
                 true
             } catch (e: Exception) {

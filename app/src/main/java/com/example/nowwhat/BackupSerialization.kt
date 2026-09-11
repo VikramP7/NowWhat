@@ -59,7 +59,7 @@ fun toJson(data: BackupData): String{
     root.put("activities", activitiesJsonArr)
     root.put("entries", entriesJsonArr)
     root.put("schedule", scheduleJsonArr)
-    root.put("note", noteJsonArr)
+    root.put("notes", noteJsonArr)
 
     return root.toString()
 }
@@ -70,7 +70,7 @@ fun fromJson(text: String): BackupData {
     val activitiesJsonArr = root.getJSONArray("activities")
     val entriesJsonArr = root.getJSONArray("entries")
     val scheduleJsonArr = root.getJSONArray("schedule")
-    val noteJsonArr = root.getJSONArray("notes")
+    val noteJsonArr = root.optJSONArray("notes") ?: JSONArray()
 
     val activities = mutableListOf<Activity>()
     for (i in 0 ..< activitiesJsonArr.length()){

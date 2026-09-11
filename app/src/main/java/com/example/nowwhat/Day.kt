@@ -5,5 +5,6 @@ import java.time.LocalDate
 data class Day(
     val hourRows: List<List<HourSlot?>>,
     val date: String,
+    val note: String?,
     val localDate: LocalDate
 )
