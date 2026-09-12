@@ -69,9 +69,9 @@ When a new logical day first appears, the app seeds that day's *planned* activit
 
 ### Daily synopsis notes
 
-Each logical day can carry one short free-text **synopsis** — a diary line for the day as a whole, complementing the per-hour activity log. The note button in a day's header opens a dialog pre-filled with whatever is already there; saving empty text deletes the note rather than storing a blank row, so the filled/outlined icon always tells the truth about whether a day has one. The same dialog is reached from the Notes settings screen, so there is one editor, not two.
+Each logical day can carry one short free-text **synopsis**; a diary line for the day as a whole, complementing the per-hour activity log. The note button in a day's header opens a dialog pre-filled with whatever is already there; saving empty text deletes the note rather than storing a blank row, so the filled/outlined icon always tells the truth about whether a day has one. The same dialog is reached from the Notes settings screen, so there is one editor, not two.
 
-Notes are keyed by **logical day** (`LocalDate.toEpochDay()`), not by a timestamp. This matters because "Day Starts At" is configurable: a timestamp-keyed note would drift onto the wrong day the moment that setting changed, whereas an epoch-day number is stable regardless of where the day boundary sits. It also makes the key naturally unique — one note per day is enforced by the primary key itself, with no separate index.
+Notes are keyed by **logical day** (`LocalDate.toEpochDay()`), not by a timestamp. This matters because "Day Starts At" is configurable: a timestamp-keyed note would drift onto the wrong day the moment that setting changed, whereas an epoch-day number is stable regardless of where the day boundary sits. It also makes the key naturally unique, one note per day is enforced by the primary key itself, with no separate index.
 
 A day with a note but no logged hours still gets a row in the hours view: the set of days to display is the union of days with entries, days with notes, and today. Empty days render as an empty grid with a filled note icon, and logging an hour on one turns it into an ordinary day.
 
