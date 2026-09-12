@@ -36,6 +36,8 @@ fun NotificationsSettingsScreen(
     val notificationsEnabled by viewModel.notificationsEnabled.collectAsState()
     val dndStartHour by viewModel.dndStartHour.collectAsState()
     val dndEndHour by viewModel.dndEndHour.collectAsState()
+    val noteNotificationsEnabled by viewModel.noteNotificationsEnabled.collectAsState()
+    val noteNotificationHour by viewModel.noteNotificationHour.collectAsState()
     val is24Hour by viewModel.is24Hour.collectAsState()
     val context = LocalContext.current
 
@@ -89,7 +91,8 @@ fun NotificationsSettingsScreen(
                     value = dndStartHour,
                     onValueChange = { viewModel.setDndStartHour(it) },
                     format = { formatHourLabel(it, is24Hour) },
-                    enabled = notificationsEnabled
+                    enabled = notificationsEnabled,
+                    wrap = true
                 )
             }
 
@@ -98,7 +101,38 @@ fun NotificationsSettingsScreen(
                     value = dndEndHour,
                     onValueChange = { viewModel.setDndEndHour(it) },
                     format = { formatHourLabel(it, is24Hour)},
+                    enabled = notificationsEnabled,
+                    wrap = true
+                )
+            }
+
+            SettingRow(label = "Note Reminder Notifications", enabled = notificationsEnabled) {
+                Switch(
+                    checked = noteNotificationsEnabled,
+                    onCheckedChange = {
+                        viewModel.setNoteNotificationsEnabled(it)
+                        if (!hasPermission && it) {
+                            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = BackgroundColour,
+                        checkedTrackColor = TextColour,
+                        uncheckedThumbColor = TextColour,
+                        uncheckedTrackColor = BackgroundColour,
+                        uncheckedBorderColor = TextColour
+                    ),
                     enabled = notificationsEnabled
+                )
+            }
+
+            SettingRow(label = "Note Notification Hour", enabled = notificationsEnabled && noteNotificationsEnabled) {
+                NumberStepper(
+                    value = noteNotificationHour,
+                    onValueChange = { viewModel.setNoteNotificationHour(it) },
+                    format = { formatHourLabel(it, is24Hour)},
+                    enabled = notificationsEnabled && noteNotificationsEnabled,
+                    wrap = true
                 )
             }
         }

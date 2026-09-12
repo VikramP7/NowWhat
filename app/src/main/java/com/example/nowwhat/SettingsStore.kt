@@ -22,6 +22,8 @@ class SettingsStore(private val context: Context) {
         val NOTIFICATION_ENABLED = booleanPreferencesKey("notifications_enabled")
         val DND_START_HOUR = intPreferencesKey("dnd_start_hour")
         val DND_END_HOUR = intPreferencesKey("dnd_end_hour")
+        val NOTE_NOTIFICATION_ENABLED = booleanPreferencesKey("note_notifications_enabled")
+        val NOTE_NOTIFICATION_HOUR = intPreferencesKey("note_notification_hour")
     }
 
     //READ
@@ -47,6 +49,14 @@ class SettingsStore(private val context: Context) {
 
     val dndEndHour: Flow<Int> = context.dataStore.data.map { prefs ->
         prefs[Keys.DND_END_HOUR] ?: 7
+    }
+
+    val noteNotificationsEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.NOTE_NOTIFICATION_ENABLED] ?: true
+    }
+
+    val noteNotificationHour: Flow<Int> = context.dataStore.data.map { prefs ->
+        prefs[Keys.NOTE_NOTIFICATION_HOUR] ?: 21
     }
 
     // WRITE
@@ -83,6 +93,18 @@ class SettingsStore(private val context: Context) {
     suspend fun setDndEndHour(value: Int) {
         context.dataStore.edit { prefs ->
             prefs[Keys.DND_END_HOUR] = value
+        }
+    }
+
+    suspend fun setNoteNotificationsEnabled(value: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.NOTE_NOTIFICATION_ENABLED] = value
+        }
+    }
+
+    suspend fun setNoteNotificationHour(value: Int) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.NOTE_NOTIFICATION_HOUR] = value
         }
     }
 }

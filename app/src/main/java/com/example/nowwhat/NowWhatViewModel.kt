@@ -331,18 +331,6 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /* ---------------------------- NOTE DB FUNCTIONS ----------------------------*/
-    private fun setNote(note: Note){
-        viewModelScope.launch {
-            noteDao.upsert(note)
-        }
-    }
-
-    private fun deleteNote(epochDay: Long){
-        viewModelScope.launch {
-            noteDao.deleteNote(epochDay = epochDay)
-        }
-    }
-
     fun deleteAllNotes(){
         viewModelScope.launch {
             noteDao.deleteAll()
@@ -351,11 +339,8 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
     /* ---------------------------- NOTES HELPER FUNCTIONS ----------------------------*/
     fun saveNote(epochDay: Long, text: String){
-        val textTrim = text.trim()
-        if(textTrim.isNotEmpty()){
-            setNote(Note(epochDay,textTrim))
-        }else{
-            deleteNote(epochDay)
+        viewModelScope.launch {
+            saveTrimNote(epochDay, text, noteDao)
         }
     }
 
@@ -390,6 +375,18 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         initialValue = 7
     )
 
+    val noteNotificationsEnabled = settingsStore.noteNotificationsEnabled.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val noteNotificationHour = settingsStore.noteNotificationHour.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = 21
+    )
+
     /* ---------------------------- SETTINGS FUNCTIONS ----------------------------*/
     fun setIs24Hour(value: Boolean) {
         viewModelScope.launch {
@@ -413,6 +410,14 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
     fun setDndEndHour(value: Int) {
         viewModelScope.launch { settingsStore.setDndEndHour(value) }
+    }
+
+    fun setNoteNotificationsEnabled(value: Boolean){
+        viewModelScope.launch { settingsStore.setNoteNotificationsEnabled(value) }
+    }
+
+    fun setNoteNotificationHour(value: Int){
+        viewModelScope.launch { settingsStore.setNoteNotificationHour(value) }
     }
 
     /* ---------------------------- IMPORT/EXPORT JSON FUNCTIONS ----------------------------*/

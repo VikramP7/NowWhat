@@ -28,6 +28,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }
 
         // Dismiss the notification
-        NotificationManagerCompat.from(context).cancel(1)
+        NotificationManagerCompat.from(context).cancel(NotificationHelper.HOURLY_NOTIFICATION_ID)
     }
 }

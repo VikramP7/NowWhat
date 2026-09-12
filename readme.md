@@ -47,7 +47,7 @@ The **settings screen** is a scrollable list of setting rows, each a rounded rec
 - **Edit Default Schedule** → weekly schedule editor
 - **Day Starts At**: a number stepper choosing the hour the day begins (see "The logical day" below)
 - **24-Hour Time**: a toggle switching all time displays between 12- and 24-hour format
-- **Notifications** → notifications settings: master on/off switch, and a do-not-disturb window (from/until hour steppers)
+- **Notifications** → notifications settings: master on/off switch, a do-not-disturb window (from/until hour steppers), and the daily-synopsis reminder (on/off switch + hour stepper)
 - **Export/Import Data** → back up all data to a JSON file, or restore from one (via the system file picker)
 - **DANGER ZONE** → destructive actions, each behind a confirmation dialog (clear logged hours, delete all notes, reset activities, clear default schedule)
 
@@ -81,9 +81,24 @@ Hourly **notifications** fire on the hour (using exact alarms) prompting you to 
 
 The notification carries **inline action buttons**: tapping one logs that activity as the *actual* for the hour that just passed, straight from the notification shade, via `NotificationActionReceiver` (which writes to Room directly and dismisses the notification). Tapping the notification body instead opens the app. Suggestions are chosen contextually: first the activity you *planned* for the hour that just passed, then (as a fallback) what you *actually* did the hour before, then a default, deduplicated and always at least one. The notification text also names the exact hour being asked about (for example "What did you just do from 2pm - 3pm?"), formatted through `formatHourLabel` so it respects the 12/24-hour setting.
 
-One deliberate scope limit: a notification shows at most **three action buttons**, so the design is **log-only**, and this is a settled choice, not a gap. Planning the hour ahead from the shade would need a different mechanism (inline text reply, or tap-to-open); the current log-only style is preferred and won't be extended that way.
+One deliberate scope limit on the *hourly* notification: it shows at most **three action buttons**, so the design is **log-only**, and this is a settled choice, not a gap. Planning the hour ahead from the shade would need a different mechanism, and the current log-only style is preferred and won't be extended that way. (The synopsis notification below does use inline text reply, but that is free text rather than a choice among activities, which is what buttons are unsuited to.)
 
 **Settings:** a master on/off switch and a **do-not-disturb window** (from/until hour). When notifications are off or the current hour falls inside the DND window, the alarm still reschedules but skips posting, so silencing never breaks the chain. The day-change seed sits *before* those checks in `AlarmReceiver`, so it keeps running even when notifications are silenced. The DND check reuses `withinHourSpan` from `DayBoundry.kt`, so it correctly handles windows that cross midnight.
+
+### The daily synopsis notification
+
+Once a day, at an hour you choose, a second notification asks you to write that day's synopsis. It rides the **same hourly alarm chain** rather than scheduling its own alarm: since the chain already fires at the top of every hour, a once-a-day prompt is just an hour-equality check inside `AlarmReceiver`. Which day it asks about comes from `logicalDateOf`, so setting the reminder to an hour in the small hours correctly asks about the day that is *ending*, not the one just begun.
+
+The prompt carries an **inline text reply**: you type the synopsis directly in the notification shade and `NoteReplyReceiver` saves it, with no need to open the app. Tapping the body opens the app as a fallback. Because there is no way to pre-fill a reply field with existing text, the prompt is **skipped entirely when the day already has a note**, so a reply can never silently overwrite one.
+
+Once the reply is saved, the receiver **replaces** the prompt with a short "Synopsis saved for …" acknowledgement on the same notification ID, which names the day that was written and clears itself after a few seconds. It replaces rather than cancels deliberately: Android's direct-reply flow expects the notification to be updated once the reply is handled, and cancelling it instead races the system's own handling, which restores the prompt with the typed text still in it and the reply button re-armed.
+
+Three deliberate choices about how it interacts with the hourly notification:
+- It uses its **own notification ID and its own channel**, so the two never replace one another and can be silenced independently in system settings. The channel is `IMPORTANCE_DEFAULT` rather than the hourly channel's `IMPORTANCE_HIGH`, so it arrives quietly.
+- The **DND window does not apply** to it. DND exists to silence the hourly stream; the synopsis hour is one you deliberately chose, so suppressing it would look like a bug (and the default reminder hour of 21 sits just before the default DND start of 22).
+- The **master switch does** apply. Off means everything is off.
+
+Both notifications appear together if the reminder hour coincides with an hourly prompt. That is intended: they ask different questions, and each dismisses independently.
 
 ### Theming and dark mode
 
@@ -101,7 +116,7 @@ The **Export/Import** screen lets you back up everything to a single JSON file a
 - **Room** (SQLite) for record data (activities, hour entries, schedule, notes), processed via **KSP**; schema export enabled, with a real `@AutoMigration` in place
 - **Jetpack DataStore** (Preferences) for scalar settings (start hour, time format, seed marker)
 - **ViewModel** + **Kotlin Flow** + **StateFlow** for reactive state
-- **AlarmManager** (exact alarms) + **BroadcastReceiver**s for the self-rescheduling on-the-hour notification engine
+- **AlarmManager** (exact alarms) + **BroadcastReceiver**s for the self-rescheduling on-the-hour notification engine, including `RemoteInput` inline reply
 - **Storage Access Framework** (`ActivityResultContracts.CreateDocument`/`OpenDocument`) + `ContentResolver` for user-driven file export/import; **`org.json`** for backup serialization
 - **Material Design 3** with a custom, system-following light/dark colour theme and vector drawable icons
 - Built in Android Studio; tested on a physical device over wireless ADB
@@ -110,7 +125,7 @@ The **Export/Import** screen lets you back up everything to a single JSON file a
 
 Data flows in one direction: **Entity → DAO → Database → ViewModel → Composable** (with DataStore as a parallel source for settings). Reads are exposed as reactive `Flow`s and `StateFlow`s, so the UI updates itself whenever the data changes. Events flow upward via callback lambdas (state hoisting).
 
-The **notification engine is a second entry point into the data layer**, living outside the ViewModel/Compose lifecycle: `AlarmReceiver`, `NotificationActionReceiver`, and `BootReceiver` reach Room and DataStore directly via `AppDatabase.getDatabase(context)` / `SettingsStore(context)` (reading with `runBlocking { flow.first() }`, which is acceptable for these short-lived, local-file reads). `AlarmReceiver` also drives the day-change seed each hour through the shared `seedDayFromSchedule` in `Seeding.kt`, the same function the ViewModel calls on launch. `NotificationHelper` (a stateless `object`) owns channel creation, notification building, and alarm scheduling. See the Notifications section above for the flow.
+The **notification engine is a second entry point into the data layer**, living outside the ViewModel/Compose lifecycle: `AlarmReceiver`, `NotificationActionReceiver`, `NoteReplyReceiver`, and `BootReceiver` reach Room and DataStore directly via `AppDatabase.getDatabase(context)` / `SettingsStore(context)` (reading with `runBlocking { flow.first() }`, which is acceptable for these short-lived, local-file reads). `AlarmReceiver` also drives the day-change seed each hour through the shared `seedDayFromSchedule` in `Seeding.kt`, the same function the ViewModel calls on launch. `NotificationHelper` (a stateless `object`) owns channel creation, notification building, and alarm scheduling. Where a rule must hold in both worlds, it is extracted into a plain top-level `suspend fun` that takes its DAO as a parameter, `Seeding.kt` for day seeding, `Notes.kt` for saving a synopsis (trim, and delete rather than store blank) — so the ViewModel and the receivers share one implementation instead of two copies. See the Notifications section above for the flow.
 
 Navigation uses a simple state-based approach: an `AppScreenState` enum (`MAIN`, `SETTINGS`, `SETTINGS_STATISTICS`, `SETTINGS_NOTES`, `SETTINGS_ACTIVITIES`, `SETTINGS_DEFAULTSCHEDULE`, `SETTINGS_NOTIFICATIONS`, `SETTINGS_DATA`, `SETTINGS_DANGERZONE`) held in `MainActivity`, with a `when` expression swapping between screens. Sub-screens navigate back to `SETTINGS`; the settings list navigates back to `MAIN`. The Android system back button mirrors this: a single `BackHandler` uses an `AppScreenState.parent()` mapping to step up the tree, and on `MAIN` (which has no parent) it disables itself so the press falls through to the OS and the app closes normally. Every screen receives the shared `ViewModel` instance and an `onNavigate` callback.
 
@@ -133,7 +148,7 @@ UI component tree:
     - `DefaultScheduleSettingsScreen` → `WeekdayPicker` + `DaySection` + preset row (passes no `noteButton`, so the schedule grid has no note icon)
     - `NotesSettingsScreen` (wired: `LazyColumn` of `NoteCard`s, tap to open `NoteDialog`)
     - `StatisticsSettingsScreen` (placeholder; scaffolding only)
-    - `NotificationsSettingsScreen` (wired: master switch + DND window)
+    - `NotificationsSettingsScreen` (wired: master switch, DND window, synopsis reminder switch + hour)
     - `DataSettingsScreen` (wired: JSON export/import via SAF file pickers, with an import confirmation)
     - `DangerZoneSettingsScreen` (wired: destructive actions, each behind a `ConfirmDialog`)
     - `ConfirmDialog`: reusable destructive-confirmation `AlertDialog` (title, message, icon, confirm label + `onConfirm`/`onDismiss`); shared by Danger Zone and import
@@ -156,7 +171,7 @@ The destructive fallback is now **narrowed** to `fallbackToDestructiveMigrationF
 
 Scalar settings (DataStore, not Room):
 
-- `is_24_hour` (Boolean), `day_start_hour` (Int), `lastSeededDay` (Long, epoch-day marker), `notifications_enabled` (Boolean, default true), `dnd_start_hour` (Int, default 22), `dnd_end_hour` (Int, default 7).
+- `is_24_hour` (Boolean), `day_start_hour` (Int), `lastSeededDay` (Long, epoch-day marker), `notifications_enabled` (Boolean, default true), `dnd_start_hour` (Int, default 22), `dnd_end_hour` (Int, default 7), `note_notifications_enabled` (Boolean, default true), `note_notification_hour` (Int, default 21).
 
 Supporting UI classes (not persisted):
 
@@ -186,6 +201,7 @@ Done:
 - **Hourly notification engine**: notification channel, `POST_NOTIFICATIONS` runtime-permission flow, exact alarms via `AlarmManager`, self-rescheduling one-shot pattern (`AlarmReceiver` reschedules on fire), boot persistence (`BootReceiver` on `BOOT_COMPLETED`), tap-to-open, and **inline action buttons** that log the actual activity from the shade (`NotificationActionReceiver`) with contextual, deduplicated suggestions
 - **Notification text names the hour being logged** (via `formatHourLabel`, honouring the 12/24-hour setting)
 - **Notifications settings wired**: master on/off switch + do-not-disturb window (from/until steppers); the receiver honours both (silencing reschedules but skips posting)
+- **Daily synopsis notification**: a once-a-day prompt riding the existing hourly alarm chain, with its own channel and notification ID, an **inline text reply** (`RemoteInput` → `NoteReplyReceiver`) that writes the note straight from the shade, skip-when-already-written, DND-exempt but master-switch-governed, and its own enable switch + hour stepper in settings
 - 24-hour format now also applied to the hour steppers ("Day Starts At", DND from/until) via `formatHourLabel`; steppers gained an optional `wrap` mode (uses `wrapRange`) so time values roll 23→0 instead of clamping
 - Settings-row visual polish: raised shadow + rounded shape so each row reads as its own card; disabled rows (and their steppers) grey out via `alpha` and stop responding to input; `SettingRow` extended with optional `leading` and `content` slots
 - **Danger Zone wired**: clear all logged hours (resets the seed marker + re-seeds today from the schedule), reset activities to defaults (trim-and-rename, IDs preserved so existing entries keep resolving), clear default schedule, each behind a reusable `ConfirmDialog` with destructive-red styling (`DangerRed`)
@@ -225,7 +241,7 @@ Done:
 - [x] Unify hour/time formatting onto `formatHourLabel`; share one `DateFormatter` for day labels
 - [ ] Add metrics page in settings to show analysis of how time is spent. Total hours (or percentage) spent on each activity; Planned vs. actual by activity confusion matrix; Daily/weekly patterns/changes; Weekday vs. weekend differences; Sleep duration and consistency; Hours that weren't logged
 - [x] Daily Synopsis: a `notes` table holding one short diary-style entry per logical day, with the schema migration, backup support, and the editing UI (day-header button + Notes settings screen)
-- [ ] Daily Synopsis **notification**: a prompt to write the day's synopsis, with its own enable/disable toggle and a configurable time-of-day *(the remaining piece of the synopsis feature)*
+- [x] Daily Synopsis **notification**: a prompt to write the day's synopsis, with its own enable/disable toggle, a configurable time-of-day, and inline reply from the shade
 - [ ] Merge-style import (currently replace-only); would need activity-ID-collision handling
 - [ ] BUG FIX settings menu rows rows are different sizes the ones with controls are taller than the others (eg. Day Starts At, 24-Hour Time)
 - [ ] Day labels omit the year, so the Notes list will read ambiguously once history spans more than a year (e.g. two "Friday · Sep 11" entries); show the year when it isn't the current one

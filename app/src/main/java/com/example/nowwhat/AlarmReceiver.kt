@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.example.nowwhat.NotificationHelper.isInDndWindow
+import com.example.nowwhat.NotificationHelper.postSynopsisNotification
 import com.example.nowwhat.NotificationHelper.scheduleNextAlarm
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -18,12 +19,15 @@ class AlarmReceiver : BroadcastReceiver() {
         val enabled = runBlocking { settingsStore.notificationsEnabled.first() }
         val dndStart = runBlocking { settingsStore.dndStartHour.first() }
         val dndEnd = runBlocking { settingsStore.dndEndHour.first() }
+        val noteNotificationsEnabled = runBlocking { settingsStore.noteNotificationsEnabled.first() }
+        val noteNotificationHour = runBlocking { settingsStore.noteNotificationHour.first() }
         val is24Hour = runBlocking { settingsStore.is24Hour.first() }
 
         val db = AppDatabase.getDatabase(context)
         val hourEntryDao = db.hourEntryDao()
         val activityDao = db.activityDao()
         val scheduleDao = db.scheduleDao()
+        val noteDao = db.noteDao()
 
         val startHour = runBlocking { settingsStore.dayStartHour.first() }
         runBlocking { seedDayFromSchedule(
@@ -34,7 +38,18 @@ class AlarmReceiver : BroadcastReceiver() {
             settingsStore = settingsStore
         )}
 
+        // early return if notifications are not enabled
         if (!enabled) return
+
+        runBlocking {
+            if (noteNotificationsEnabled && hourOfDay(System.currentTimeMillis()) == noteNotificationHour) {
+                val epochDay = logicalDateOf(System.currentTimeMillis(), startHour).toEpochDay()
+                if (noteDao.getByEpochDay(epochDay) == null) {
+                    postSynopsisNotification(context, epochDay)
+                }
+            }
+        }
+
         if (isInDndWindow(dndStart, dndEnd)) return
 
         val suggestions = mutableListOf<Activity>()
