@@ -52,5 +52,5 @@ fun NumberStepper(
 @Preview
 @Composable
 fun NumberStepperPreview() {
-    NumberStepper(value = 6, onValueChange = {}, format = { "%02d:00".format(it) })
+    NumberStepper(value = 6, onValueChange = {}, format = { formatHourLabel(it, is24Hour = false) })
 }

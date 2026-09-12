@@ -3,6 +3,7 @@ package com.example.nowwhat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 // A NowWhat "day" runs dayStartHour → dayStartHour-1min next calendar day,
 // so typically the small hours belong to the PREVIOUS logical day.
@@ -39,6 +40,7 @@ fun hourOfDay(timestamp: Long, zone: ZoneId = ZoneId.systemDefault()): Int =
 fun dayOfWeek(timestamp: Long, zone: ZoneId = ZoneId.systemDefault()): Int =
     Instant.ofEpochMilli(timestamp).atZone(zone).dayOfWeek.value
 
+val DateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE · MMM d")
 fun formatHourLabel(hour: Int, is24Hour: Boolean): String {
     val hour24Wrap = wrapRange(hour)
     return if (is24Hour) {

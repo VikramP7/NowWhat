@@ -48,12 +48,10 @@ fun EntryPanel(
         .atZone(zone)
 
     val dayFormatter = DateTimeFormatter.ofPattern("MMM d")
-    val hourPattern = if (is24Hour) "HH:mm" else "h:mm a"
-    val hourFormatter = DateTimeFormatter.ofPattern(hourPattern)
 
     val dayText = dateTime.format(dayFormatter)
-    val startTime = dateTime.format(hourFormatter)
-    val endTime = dateTime.plusHours(1).format(hourFormatter)
+    val startTime = formatHourLabel(dateTime.hour, is24Hour)
+    val endTime = formatHourLabel(dateTime.hour+1, is24Hour)
 
     val panelColour = BackgroundColour
 

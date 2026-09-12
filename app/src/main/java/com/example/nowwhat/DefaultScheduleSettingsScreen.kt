@@ -50,7 +50,10 @@ fun DefaultScheduleSettingsScreen(
         ) }
     ) { innerPadding ->
         Column(
-            modifier = Modifier.padding(innerPadding).fillMaxWidth().padding(16.dp),
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             WeekdayPicker(
@@ -60,13 +63,13 @@ fun DefaultScheduleSettingsScreen(
 
             DaySection(
                 hourRows = scheduleRows,
-                dateLabel = DayOfWeek.of(selectedDay).getDisplayName(TextStyle.FULL, Locale.getDefault()),
+                dateLabel = DayOfWeek.of(selectedDay)
+                    .getDisplayName(TextStyle.FULL, Locale.getDefault()),
                 is24Hour = is24Hour,
                 dayStartHour = dayStartHour,
                 selectedHourOfDay = selectedHour,
                 onClick = { hour -> viewModel.setSelectedScheduleHour(hour) }
             )
-
             Row() {
                 Icon(
                     painter = painterResource(R.drawable.ic_clock),
@@ -77,7 +80,7 @@ fun DefaultScheduleSettingsScreen(
                 val slotWeekday = scheduleWeekdayFor(selectedHour, selectedDay, dayStartHour)
                 val slotDayName = DayOfWeek.of(slotWeekday).getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
-                Text(text = " ${selectedHour}:00 - ${selectedHour+1}:00 · ${slotDayName} · What's planned?",color = TextColour)
+                Text(text = " ${formatHourLabel(selectedHour, is24Hour)} - ${formatHourLabel(selectedHour + 1, is24Hour)} · ${slotDayName} · What's planned?",color = TextColour)
             }
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

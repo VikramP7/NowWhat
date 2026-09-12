@@ -10,12 +10,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.nowwhat.ui.theme.BackgroundColour
+import com.example.nowwhat.ui.theme.TextColour
 import java.time.Instant
 import java.time.ZoneId
 
@@ -25,6 +29,7 @@ fun HoursView(
     is24Hour: Boolean,
     dayStartHour: Int,
     onClick: (dayIndex: Int, hourIndex: Int) -> Unit,
+    onNoteClick: (Day) -> Unit,
     modifier: Modifier = Modifier,
     selectedTimestamp: Long = 0L
 ) {
@@ -38,14 +43,14 @@ fun HoursView(
         modifier = modifier.fillMaxWidth().background(BackgroundColour),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        item { Spacer(modifier = Modifier.height(10.dp)) }
-        itemsIndexed(days, key = { _, day -> day.date }) { dayIndex, day ->
+        //item { Spacer(modifier = Modifier.height(10.dp)) } margin to prevent the first day from being cut off
+        itemsIndexed(days, key = { _, day -> day.localDate.toEpochDay() }) { dayIndex, day ->
             Column {
                 if (dayIndex > 0) {
                     HorizontalDivider(
                         thickness = 0.5.dp,
                         color = Color.LightGray,
-                        modifier = Modifier.padding(vertical = 4.dp)
+                        modifier = Modifier.padding(vertical = 2.dp)
                     )
                 }
                 DaySection(
@@ -54,7 +59,16 @@ fun HoursView(
                     is24Hour = is24Hour,
                     dayStartHour = dayStartHour,
                     selectedHourOfDay = if (day.localDate == selectedDate) selectedHour else null,
-                    onClick = { hourIndex -> onClick(dayIndex, hourIndex) }
+                    onClick = { hourIndex -> onClick(dayIndex, hourIndex) },
+                    noteButton = {
+                        IconButton(onClick = {onNoteClick(day)}) {
+                            Icon(
+                                painter = painterResource(if (day.note != null) R.drawable.ic_note_fill else R.drawable.ic_note),
+                                contentDescription = if (day.note != null) "Edit note" else "Add note",
+                                tint = TextColour
+                            )
+                        }
+                    }
                 )
             }
         }

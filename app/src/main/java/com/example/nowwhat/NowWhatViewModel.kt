@@ -106,8 +106,6 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         val validDaysSet: Set<LocalDate> = groupedEntryMap.keys + noteMap.keys + today
 
         // For each date, build a Day object
-        val formatter = DateTimeFormatter.ofPattern("EEEE · MMM d")
-
         return validDaysSet.sortedDescending().map {date ->
             // Build 24-hour slots, one per hour, all starting null
             val hourSlots = arrayOfNulls<HourSlot>(24)
@@ -130,7 +128,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                 }
             }
 
-            Day(date = date.format(formatter), hourRows = rows, localDate = date, note = noteMap[date]?.text)
+            Day(date = date.format(DateFormatter), hourRows = rows, localDate = date, note = noteMap[date]?.text)
         }
     }
 

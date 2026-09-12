@@ -2,12 +2,13 @@ package com.example.nowwhat
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.nowwhat.ui.theme.TextColour
@@ -20,7 +21,8 @@ fun DaySection(
     dayStartHour: Int,
     onClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    selectedHourOfDay: Int? = null
+    noteButton: (@Composable () -> Unit)? = null,
+    selectedHourOfDay: Int? = null,
 ) {
     // 0..23 hours past the day's start, or null
     val selectedOffset = selectedHourOfDay?.let { (it - dayStartHour + 24) % 24 }
@@ -29,27 +31,33 @@ fun DaySection(
     val dayPartLabels = bandNames.mapIndexed { index, name ->
         "$name ${formatHourLabel((dayStartHour + index * 6) % 24, is24Hour)}"
     }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = dateLabel,
-            style = MaterialTheme.typography.titleSmall,
-            textAlign = TextAlign.Start,
-            modifier = Modifier.padding(end = 8.dp),
-            color = TextColour
-        )
-
-        hourRows.forEachIndexed { index, row ->
-            val selectedInRow =
-                if (selectedOffset != null && selectedOffset / 6 == index) selectedOffset % 6
-                else null
-
-            PartOfDayRow(
-                label = dayPartLabels[index],
-                hourSlots = row,
-                selectedHourInRow = selectedInRow,
-                onClick = { hourInRow -> onClick((dayStartHour + (index * 6) + hourInRow) % 24) }
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = dateLabel,
+                style = MaterialTheme.typography.titleMedium,
+                color = TextColour,
+                modifier = Modifier.weight(1f)
             )
+            noteButton?.invoke()
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            hourRows.forEachIndexed { index, row ->
+                val selectedInRow =
+                    if (selectedOffset != null && selectedOffset / 6 == index) selectedOffset % 6
+                    else null
+
+                PartOfDayRow(
+                    label = dayPartLabels[index],
+                    hourSlots = row,
+                    selectedHourInRow = selectedInRow,
+                    onClick = { hourInRow -> onClick((dayStartHour + (index * 6) + hourInRow) % 24) }
+                )
+            }
         }
     }
 }
