@@ -1,4 +1,4 @@
-*<div align="right"> Vikram Procter | June 19, 2026 </div>*
+*<div align="right"> Vikram Procter | September 11, 2026 </div>*
 
 # NowWhat? - README
 
@@ -33,7 +33,7 @@ To build the APK yourself:
 The main screen, top to bottom:
 
 - **Top bar**: the app name, and a settings icon (top right) that opens Settings.
-- **Hours view** (scrollable): one section per day. Each day has **four rows**: Morning, Day, Evening, and Night. Each row holds one **box per hour** in that band. Every box is:
+- **Hours view** (scrollable): one section per day. Each day is headed by its date, with a **note button** at the right of that header (outlined when the day has no synopsis, filled when it does). Below the header are **four rows**: Morning, Day, Evening, and Night. Each row holds one **box per hour** in that band. Every box is:
   - **outlined** in the colour of the activity you *planned* for that hour, and
   - **filled** with the colour of the activity you *actually* did.
 
@@ -41,17 +41,21 @@ The main screen, top to bottom:
 - **Entry panel** (pinned to bottom): shows the currently selected time slot with a clock icon. Displays preset buttons in two rows: outlined "What's planned?" buttons and filled "What's happened?" buttons. Both rows include an "Edit+" button that navigates to Settings. The "What's happened?" buttons are disabled for hours in the future. Includes a **colour legend** mapping each colour to its activity. The right edge of the button rows fades to avoid a hard scroll cutoff.
 
 The **settings screen** is a scrollable list of setting rows, each a rounded rectangle with either a chevron (opens a sub-screen), a toggle, or a number stepper:
+- **See Statistics** → metrics screen (placeholder; see TODO)
+- **Edit Notes** → browse and edit every daily synopsis
 - **Edit Activities** → activity management screen
 - **Edit Default Schedule** → weekly schedule editor
 - **Day Starts At**: a number stepper choosing the hour the day begins (see "The logical day" below)
 - **24-Hour Time**: a toggle switching all time displays between 12- and 24-hour format
 - **Notifications** → notifications settings: master on/off switch, and a do-not-disturb window (from/until hour steppers)
 - **Export/Import Data** → back up all data to a JSON file, or restore from one (via the system file picker)
-- **DANGER ZONE** → destructive actions, each behind a confirmation dialog (clear logged hours, reset activities, clear default schedule)
+- **DANGER ZONE** → destructive actions, each behind a confirmation dialog (clear logged hours, delete all notes, reset activities, clear default schedule)
 
 The **activities editor** shows an editable list of activities styled as settings-style cards. Each card has a tappable colour swatch (revealing a palette to pick from), an inline text field for renaming, and a delete button, plus an "Add" button at the bottom. The list scrolls clear of the keyboard when a name field is focused.
 
 The **default schedule editor** lets you define a recurring weekly plan. A row of seven day-chips (Mo–Su) selects which weekday you're editing; below it a grid identical to the main hours view shows that weekday's planned activities. Tap an hour box to select it, then tap a preset to set (or Clear to remove) the planned activity for that slot. The header shows the selected hour and which weekday it belongs to.
+
+The **notes screen** lists every daily synopsis newest-first as a card showing the day's date above a three-line preview of the text. Tapping a card opens the same editing dialog the main screen uses. When there are no notes yet, the list shows a short prompt pointing at the note icon on the hours view.
 
 ## How it works
 
@@ -62,6 +66,14 @@ A NowWhat "day" doesn't run midnight-to-midnight: it runs from a configurable **
 ### Default schedule auto-fill
 
 When a new logical day first appears, the app seeds that day's *planned* activities from the matching weekday's schedule template. Seeding is **fill-only**: it never overwrites a planned activity you set manually, and a "last seeded day" marker in DataStore ensures each day seeds only once. The seeding logic lives in one place (`Seeding.kt`) and is triggered from two spots: a one-shot seed when the ViewModel starts (covering app launch), and the hourly notification alarm (covering the day boundary while the app is open or in the background). Because the day boundary always falls on a whole hour, the hourly alarm lands exactly on it, so there is no need to poll. Changing "Day Starts At" also re-runs the seed, via a small collector on the setting.
+
+### Daily synopsis notes
+
+Each logical day can carry one short free-text **synopsis** — a diary line for the day as a whole, complementing the per-hour activity log. The note button in a day's header opens a dialog pre-filled with whatever is already there; saving empty text deletes the note rather than storing a blank row, so the filled/outlined icon always tells the truth about whether a day has one. The same dialog is reached from the Notes settings screen, so there is one editor, not two.
+
+Notes are keyed by **logical day** (`LocalDate.toEpochDay()`), not by a timestamp. This matters because "Day Starts At" is configurable: a timestamp-keyed note would drift onto the wrong day the moment that setting changed, whereas an epoch-day number is stable regardless of where the day boundary sits. It also makes the key naturally unique — one note per day is enforced by the primary key itself, with no separate index.
+
+A day with a note but no logged hours still gets a row in the hours view: the set of days to display is the union of days with entries, days with notes, and today. Empty days render as an empty grid with a filled note icon, and logging an hour on one turns it into an ordinary day.
 
 ### Notifications
 
@@ -79,14 +91,14 @@ The app follows the system light/dark setting. Rather than routing every screen 
 
 ### Data backup (export / import)
 
-The **Export/Import** screen lets you back up everything to a single JSON file and restore it later. Both directions go through Android's **Storage Access Framework**: the OS file picker hands the app a `Uri` for exactly the one file the user chose, so no broad storage permission is needed. Serialization is hand-rolled with the built-in `org.json` (no dependency): three arrays (activities, entries, schedule) plus a `version` field for future migrations. The `ContentResolver` stream I/O runs on `Dispatchers.IO`; Room's own suspend DAOs handle their own threading.
+The **Export/Import** screen lets you back up everything to a single JSON file and restore it later. Both directions go through Android's **Storage Access Framework**: the OS file picker hands the app a `Uri` for exactly the one file the user chose, so no broad storage permission is needed. Serialization is hand-rolled with the built-in `org.json` (no dependency): four arrays (activities, entries, schedule, notes) plus a `BACKUP_VERSION` field. The version is currently **2**; v1 files (written before notes existed) still import cleanly because the notes array is read with `optJSONArray` and defaults to empty when absent, rather than the throwing `getJSONArray`. The `ContentResolver` stream I/O runs on `Dispatchers.IO`; Room's own suspend DAOs handle their own threading.
 
 **Import is replace, not merge:** the whole database is wiped and rebuilt from the file, inside a single Room **transaction** so a mid-restore failure rolls back rather than leaving a half-wiped database. Crucially, activity **IDs are preserved** across the round-trip: because hour entries and schedule slots reference activities *by ID*, letting Room auto-generate fresh IDs on import would silently repoint every logged hour at the wrong activity. The file is parsed *before* the transaction opens, so a malformed file fails loudly and touches nothing. A colour stored as an opaque ARGB `Int` serializes as a negative number (the alpha byte sets the sign bit); this is lossless and expected. Merge-style import is possible future work but deliberately deferred to avoid ID-collision handling.
 
 ## Tech stack
 
 - **Kotlin** + **Jetpack Compose** (declarative UI)
-- **Room** (SQLite) for record data (activities, hour entries, schedule), processed via **KSP**; schema export enabled for migration-readiness
+- **Room** (SQLite) for record data (activities, hour entries, schedule, notes), processed via **KSP**; schema export enabled, with a real `@AutoMigration` in place
 - **Jetpack DataStore** (Preferences) for scalar settings (start hour, time format, seed marker)
 - **ViewModel** + **Kotlin Flow** + **StateFlow** for reactive state
 - **AlarmManager** (exact alarms) + **BroadcastReceiver**s for the self-rescheduling on-the-hour notification engine
@@ -100,7 +112,7 @@ Data flows in one direction: **Entity → DAO → Database → ViewModel → Com
 
 The **notification engine is a second entry point into the data layer**, living outside the ViewModel/Compose lifecycle: `AlarmReceiver`, `NotificationActionReceiver`, and `BootReceiver` reach Room and DataStore directly via `AppDatabase.getDatabase(context)` / `SettingsStore(context)` (reading with `runBlocking { flow.first() }`, which is acceptable for these short-lived, local-file reads). `AlarmReceiver` also drives the day-change seed each hour through the shared `seedDayFromSchedule` in `Seeding.kt`, the same function the ViewModel calls on launch. `NotificationHelper` (a stateless `object`) owns channel creation, notification building, and alarm scheduling. See the Notifications section above for the flow.
 
-Navigation uses a simple state-based approach: an `AppScreenState` enum (`MAIN`, `SETTINGS`, `SETTINGS_ACTIVITIES`, `SETTINGS_DEFAULTSCHEDULE`, `SETTINGS_NOTIFICATIONS`, `SETTINGS_DATA`, `SETTINGS_DANGERZONE`) held in `MainActivity`, with a `when` expression swapping between screens. Sub-screens navigate back to `SETTINGS`; the settings list navigates back to `MAIN`. The Android system back button mirrors this: a single `BackHandler` uses an `AppScreenState.parent()` mapping to step up the tree, and on `MAIN` (which has no parent) it disables itself so the press falls through to the OS and the app closes normally. Every screen receives the shared `ViewModel` instance and an `onNavigate` callback.
+Navigation uses a simple state-based approach: an `AppScreenState` enum (`MAIN`, `SETTINGS`, `SETTINGS_STATISTICS`, `SETTINGS_NOTES`, `SETTINGS_ACTIVITIES`, `SETTINGS_DEFAULTSCHEDULE`, `SETTINGS_NOTIFICATIONS`, `SETTINGS_DATA`, `SETTINGS_DANGERZONE`) held in `MainActivity`, with a `when` expression swapping between screens. Sub-screens navigate back to `SETTINGS`; the settings list navigates back to `MAIN`. The Android system back button mirrors this: a single `BackHandler` uses an `AppScreenState.parent()` mapping to step up the tree, and on `MAIN` (which has no parent) it disables itself so the press falls through to the OS and the app closes normally. Every screen receives the shared `ViewModel` instance and an `onNavigate` callback.
 
 UI component tree:
 
@@ -108,7 +120,7 @@ UI component tree:
   - `NowWhatScreen`: owns the Scaffold with TopBar (topBar slot) and EntryPanel (bottomBar slot)
     - `TopBar`: title + settings icon
     - `HoursView`: scrollable `LazyColumn` of days with top/bottom fade effects
-      - `DaySection`: date label + four part-of-day rows (takes `hourRows` + `dateLabel`, not a whole `Day`)
+      - `DaySection`: header row (date label + optional `noteButton` slot) above four part-of-day rows (takes `hourRows` + `dateLabel`, not a whole `Day`)
         - `PartOfDayRow`: band label + a row of boxes
           - `HourBox`: one hour. Outline = planned colour, fill = actual colour; rounded corners, shadow when selected; tappable
     - `EntryPanel`: pinned bottom panel with right-edge fade effect
@@ -118,31 +130,38 @@ UI component tree:
     - `SettingRow`: rounded card row with an optional `leading` slot, either a plain `label` or a custom `content` slot, and a trailing slot (chevron / switch / stepper, or swatch + name field + delete on the activities screen)
     - `NumberStepper`: reusable −/value/+ stepper with a `format` lambda
     - `ActivitiesSettingsScreen`: self-contained (no separate child composable). Renders each activity as a `SettingRow` with the colour swatch in `leading`, an inline-rename `BasicTextField` in `content`, and a delete action trailing; keyboard-aware via `imePadding`
-    - `DefaultScheduleSettingsScreen` → `WeekdayPicker` + `DaySection` + preset row
+    - `DefaultScheduleSettingsScreen` → `WeekdayPicker` + `DaySection` + preset row (passes no `noteButton`, so the schedule grid has no note icon)
+    - `NotesSettingsScreen` (wired: `LazyColumn` of `NoteCard`s, tap to open `NoteDialog`)
+    - `StatisticsSettingsScreen` (placeholder; scaffolding only)
     - `NotificationsSettingsScreen` (wired: master switch + DND window)
     - `DataSettingsScreen` (wired: JSON export/import via SAF file pickers, with an import confirmation)
     - `DangerZoneSettingsScreen` (wired: destructive actions, each behind a `ConfirmDialog`)
     - `ConfirmDialog`: reusable destructive-confirmation `AlertDialog` (title, message, icon, confirm label + `onConfirm`/`onDismiss`); shared by Danger Zone and import
+    - `NoteDialog`: reusable synopsis editor `AlertDialog` (title, initial text, `onSave(String)`/`onDismiss`); knows nothing about `Note`/`Day`/the ViewModel, so the hours view and the notes screen share it
+    - `NoteCard`: notes-list card — date above a 3-line text preview, same shape/shadow/fill as `SettingRow` but a `Column` so text can wrap
     - `TopBarSettings`: "Settings" title (+ optional breadcrumb path) + close/back icon
 
 ## Data model
 
-Three tables:
+Four tables:
 
 - **Activity** (`activities`): a preset with a name, a colour (ARGB Int), and an auto-generated ID.
 - **HourEntry** (`hour_entries`): one hour, holding a timestamp (epoch millis, truncated to the hour), a *planned* Activity ID, and an *actual* Activity ID (both nullable).
 - **ScheduleEntry** (`schedule_entries`): one slot of the weekly template, holding a `dayOfWeek` (1–7, ISO Mon–Sun), an `hourOfDay` (0–23), a *planned* Activity ID (nullable), and an auto-generated ID. A composite **unique index** on `(dayOfWeek, hourOfDay)` guarantees one row per slot; writes use `OnConflictStrategy.REPLACE`.
+- **Note** (`notes`): one daily synopsis, holding `epochDay: Long` (the logical day, from `LocalDate.toEpochDay()`) as the **primary key** and `text: String`. Because the key is natural rather than auto-generated, one-note-per-day needs no separate index and writes can use Room's `@Upsert`.
 
-The database is at **version 3**. Schema export is enabled (`exportSchema = true` plus the KSP `room.schemaLocation` argument), and the v3 baseline (`schemas/…/AppDatabase/3.json`) is committed to version control. This means a future additive change (adding a column or table) can be handled with a bumped version and an `@AutoMigration(from = 3, to = 4)`, letting Room generate the migration SQL by diffing against the committed baseline. The builder still keeps `fallbackToDestructiveMigration(true)` as a backstop; no schema change has been needed yet, so no real migration has had to be written.
+The database is at **version 4**. Schema export is enabled (`exportSchema = true` plus the KSP `room.schemaLocation` argument), and both baselines (`schemas/…/AppDatabase/3.json` and `4.json`) are committed to version control. The `notes` table arrived as a purely additive change, so it is handled by `@AutoMigration(from = 3, to = 4)`: Room diffs the committed `3.json` against the new schema and generates the SQL itself, with no migration spec class needed. Verified on device by installing over an existing v3 build with data intact.
+
+The destructive fallback is now **narrowed** to `fallbackToDestructiveMigrationFrom(true, 1, 2)`. Devices on the pre-schema-export versions 1 and 2 are still recreated from scratch, but any later version with no migration path now throws an `IllegalStateException` naming the missing migration instead of silently wiping the database — so a forgotten migration fails loudly during development rather than costing a user their history.
 
 Scalar settings (DataStore, not Room):
 
-- `is_24_hour` (Boolean), `day_start_hour` (Int), `last_seeded_day` (Long, epoch-day marker), `notifications_enabled` (Boolean, default true), `dnd_start_hour` (Int, default 22), `dnd_end_hour` (Int, default 7).
+- `is_24_hour` (Boolean), `day_start_hour` (Int), `lastSeededDay` (Long, epoch-day marker), `notifications_enabled` (Boolean, default true), `dnd_start_hour` (Int, default 22), `dnd_end_hour` (Int, default 7).
 
 Supporting UI classes (not persisted):
 
 - **HourSlot**: holds a planned and an actual `Activity?`, used to pass data to `HourBox`.
-- **Day**: holds a date string, a `LocalDate`, and four lists of `HourSlot?` (one per time band), used for the main hours view. The schedule editor uses bare `List<List<HourSlot?>>` rows rather than a `Day`, since a template has no calendar date.
+- **Day**: holds a date string, a `LocalDate`, that day's synopsis text (`note: String?`), and four lists of `HourSlot?` (one per time band), used for the main hours view. The schedule editor uses bare `List<List<HourSlot?>>` rows rather than a `Day`, since a template has no calendar date.
 
 ## Status
 
@@ -174,6 +193,9 @@ Done:
 - **Seeding ticker retired**: the day-change seed is factored into `Seeding.kt` and driven by a one-shot launch seed plus the hourly alarm pulse, both guarded by the `last_seeded_day` marker; the one-minute polling loop is gone
 - **System-following dark mode**: chrome colours are composable accessors that switch on `isSystemInDarkTheme()`, backed by light/dark value pairs; activity palette stays theme-independent
 - **Room migration-readiness**: schema export enabled and the v3 baseline committed
+- **Daily synopsis notes**: `Note` + `NoteDao` keyed by logical day (`@Upsert`, natural primary key), the app's **first real schema migration** (v3 → v4 via `@AutoMigration`, verified data-preserving on device), notes added to the JSON backup (`BACKUP_VERSION` 2, backwards-compatible import of v1 files), note button per day in the hours view (filled/outlined), a shared `NoteDialog` reached from both the hours view and the Notes settings screen, note-only days rendering as empty grids, and a Danger Zone "delete all notes" action
+- **Destructive-migration fallback narrowed** to versions 1–2 only, so missing migrations now crash loudly instead of wiping data
+- **Hour formatting unified**: `DefaultScheduleSettingsScreen`'s header and `EntryPanel`'s time range now route through `formatHourLabel` (previously raw `"$h:00"` and a `DateTimeFormatter` `"h:mm a"` pattern, which ignored / diverged from the 12/24-hour setting); the shared `DateFormatter` in `DayBoundry.kt` is now the one home for the day-label date pattern
 - App runs on physical device over wireless ADB
 
 ## TODO
@@ -199,11 +221,15 @@ Done:
 - [x] Android back button to navigate instead of close the app
 - [x] Cleanup: unused imports in touched files removed; legacy `ActivitiesSettings.kt` deleted after inlining
 - [x] Enable Room schema export and commit the v3 baseline (migration-readiness)
+- [x] Write a real `@AutoMigration` (v3 → v4 for the `notes` table) and narrow the destructive fallback to versions 1–2
+- [x] Unify hour/time formatting onto `formatHourLabel`; share one `DateFormatter` for day labels
 - [ ] Add metrics page in settings to show analysis of how time is spent. Total hours (or percentage) spent on each activity; Planned vs. actual by activity confusion matrix; Daily/weekly patterns/changes; Weekday vs. weekend differences; Sleep duration and consistency; Hours that weren't logged
-- [ ] Daily Synopsis a new table in the database that holds a short diary entry like string for each day, this would come with a setting to enable notifications for it. Will need to write database migration.
-- [ ] Write a real `@AutoMigration` the next time an entity changes, and drop `fallbackToDestructiveMigration` once migrations cover every version path
+- [x] Daily Synopsis: a `notes` table holding one short diary-style entry per logical day, with the schema migration, backup support, and the editing UI (day-header button + Notes settings screen)
+- [ ] Daily Synopsis **notification**: a prompt to write the day's synopsis, with its own enable/disable toggle and a configurable time-of-day *(the remaining piece of the synopsis feature)*
 - [ ] Merge-style import (currently replace-only); would need activity-ID-collision handling
 - [ ] BUG FIX settings menu rows rows are different sizes the ones with controls are taller than the others (eg. Day Starts At, 24-Hour Time)
+- [ ] Day labels omit the year, so the Notes list will read ambiguously once history spans more than a year (e.g. two "Friday · Sep 11" entries); show the year when it isn't the current one
+- [ ] Search over notes on the Notes settings screen
 
 
 Placeholder assumptions: the four time bands are fixed 6-hour blocks anchored at the start hour (Morning = start, then +6/+12/+18), and the starter presets are Work, Sleep, Gym, Social, and Dating.
