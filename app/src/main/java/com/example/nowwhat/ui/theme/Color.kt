@@ -91,3 +91,6 @@ val LightActivityColours: List<Int> = listOf(
     Lime.toArgb(),
     Purple.toArgb()
 )
+
+val UnloggedColour = Color(0xFF4A4A4A)
+val OrphanedColour = Color(0xFF6E5A5A)

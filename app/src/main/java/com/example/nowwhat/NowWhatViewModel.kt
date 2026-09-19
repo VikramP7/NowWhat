@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -84,6 +85,34 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
     )
+
+    /* ---------------------------- STATISTICS VALs ----------------------------*/
+    private val _statsFilter = MutableStateFlow(StatsFilter())
+    val statsFilter: StateFlow<StatsFilter> = _statsFilter
+
+    val statistics: StateFlow<Statistics?> = combine(
+        entriesFlow,
+        activitiesFlow,
+        settingsStore.dayStartHour,
+        _statsFilter
+    ) { entries, activities, startHour, filter ->
+        computeStatistics(entries, activities, startHour, filter)
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+
+    /* ---------------------------- DEFAULT SCHEDULE HELPER FUNCTIONS ----------------------------*/
+    fun setStatsWindow(window: StatsWindow) {
+        _statsFilter.value = _statsFilter.value.copy(window = window)
+    }
+
+    fun setStatsDayType(dayType: DayType) {
+        _statsFilter.value = _statsFilter.value.copy(dayType = dayType)
+    }
 
     /* ---------------------------- HOUR LOGGING HELPER FUNCTIONS ----------------------------*/
     private fun transformIntoDays(entries: List<HourEntry>, activities: List<Activity>, notes: List<Note>, dayStartHour: Int): List<Day> {
