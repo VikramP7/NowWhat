@@ -33,6 +33,7 @@ data class Statistics(
     val hoursInRange: Int,
     val daysTracked: Int,
     val daysInRange: Int,
+    val coverage: Float?,
     val plannedActivityTotals: List<ActivityTotal>,
     val actualActivityTotals: List<ActivityTotal>
 )
@@ -67,7 +68,7 @@ fun computeStatistics(
         (it.timestamp < cutoff) && (logicalDateOf(it.timestamp, dayStartHour) in daySet)
     }
 
-    val daysTracked = filteredEntries.filter { it.actualActivityId != null }.distinctBy { logicalDateOf(it.timestamp, dayStartHour) }.size
+    val daysTracked = filteredEntries.filter { activityMap[it.actualActivityId] != null }.distinctBy { logicalDateOf(it.timestamp, dayStartHour) }.size
 
     val actual = totalsFor(filteredEntries.map { it.actualActivityId }, activityMap)
     val planned = totalsFor(filteredEntries.map { it.plannedActivityId }, activityMap)
@@ -78,6 +79,7 @@ fun computeStatistics(
 
     val blankLogHours = hoursInRange-(actual.enteredHours+actual.orphanedHours)
     val blankPlanHours = hoursInRange-(planned.enteredHours+planned.orphanedHours)
+    val coverage = if (hoursInRange.toFloat() > 0) actual.enteredHours.toFloat()/hoursInRange.toFloat() else null
 
     return Statistics(
         loggedHours = actual.enteredHours,
@@ -89,6 +91,7 @@ fun computeStatistics(
         hoursInRange = hoursInRange,
         daysTracked = daysTracked,
         daysInRange = filteredDays.size,
+        coverage = coverage,
         plannedActivityTotals = planned.totals,
         actualActivityTotals = actual.totals
     )
