@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nowwhat.ui.theme.BackgroundColour
@@ -37,6 +38,7 @@ fun StatisticsSettingsScreen(
 
     val statistics by viewModel.statistics.collectAsState()
     val filter by viewModel.statsFilter.collectAsState()
+    val normalized by viewModel.statsNormalize.collectAsState()
 
     Scaffold(
         modifier = modifier,
@@ -135,6 +137,59 @@ fun StatisticsSettingsScreen(
                             }
                         )
                         DonutLegend( slices = slices )
+                    }
+                }
+
+                item {
+                    StatsCard(
+                        title = "Plan vs Actual"
+                    ) {
+                        if (stats.adherence == null){
+                            Text("No data in selected range...")
+                        } else{
+                            Column(
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "${(stats.adherence * 100).roundToInt()}%",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = TextColour
+                                )
+                                Text(
+                                    text = "of hours you logged went to plan",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = TextColour
+                                )
+                            }
+                            StatsChipRow(
+                                options = listOf(true, false),
+                                selected = normalized,
+                                label = {
+                                    when (it) {
+                                        true -> "% of plan"
+                                        false -> "Hours"
+                                    }
+                                },
+                                onSelect = viewModel::setStatsNormalize
+                            )
+                            Text(
+                                text = "Rows are planned, columns are actual",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = TextColour
+                            )
+                            ActivityMatrixGrid(
+                                matrix = stats.planVsActual,
+                                normalised = normalized
+                            )
+                            ActivityLegend(stats.planVsActual.axis)
+                            Text(
+                                text = "${stats.unpairedHours} hours excluded (no plan or no log)",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = TextColour
+                            )
+                        }
                     }
                 }
             }

@@ -31,11 +31,18 @@ data class Statistics(
     val blankPlanHours: Int,
     val orphanedPlanHours: Int,
     val hoursInRange: Int,
+
     val daysTracked: Int,
     val daysInRange: Int,
+
     val coverage: Float?,
     val plannedActivityTotals: List<ActivityTotal>,
-    val actualActivityTotals: List<ActivityTotal>
+    val actualActivityTotals: List<ActivityTotal>,
+
+    val planVsActual: ActivityMatrix,
+    val pairedHours: Int,
+    val adherence: Float?,
+    val unpairedHours: Int
 )
 
 fun computeStatistics(
@@ -64,14 +71,14 @@ fun computeStatistics(
 
     val cutoff = truncateToHour(now)
     val daySet = filteredDays.toSet()
-    val filteredEntries = entries.filter {
+    val inRangeEntries = entries.filter {
         (it.timestamp < cutoff) && (logicalDateOf(it.timestamp, dayStartHour) in daySet)
     }
 
-    val daysTracked = filteredEntries.filter { activityMap[it.actualActivityId] != null }.distinctBy { logicalDateOf(it.timestamp, dayStartHour) }.size
+    val daysTracked = inRangeEntries.filter { activityMap[it.actualActivityId] != null }.distinctBy { logicalDateOf(it.timestamp, dayStartHour) }.size
 
-    val actual = totalsFor(filteredEntries.map { it.actualActivityId }, activityMap)
-    val planned = totalsFor(filteredEntries.map { it.plannedActivityId }, activityMap)
+    val actual = totalsFor(inRangeEntries.map { it.actualActivityId }, activityMap)
+    val planned = totalsFor(inRangeEntries.map { it.plannedActivityId }, activityMap)
 
     val hoursInRange = filteredDays.sumOf { date ->
         if (date == today) wrapRange(hourOfDay(now) - dayStartHour) else 24
@@ -80,6 +87,24 @@ fun computeStatistics(
     val blankLogHours = hoursInRange-(actual.enteredHours+actual.orphanedHours)
     val blankPlanHours = hoursInRange-(planned.enteredHours+planned.orphanedHours)
     val coverage = if (hoursInRange.toFloat() > 0) actual.enteredHours.toFloat()/hoursInRange.toFloat() else null
+
+    val planVsActualPairs = inRangeEntries.mapNotNull { entry ->
+        val planned = entry.plannedActivityId
+        val actual = entry.actualActivityId
+        if (planned != null && actual != null) planned to actual else null
+    }
+
+    val planVsActualMatrix = activityMatrix(
+        pairs = planVsActualPairs,
+        activities = activities
+    )
+
+    val pairedHours = planVsActualMatrix.counts.sumOf { it.sum() }
+    val adherence =
+        if (pairedHours == 0) null
+        else planVsActualMatrix.counts.indices.sumOf { planVsActualMatrix.counts[it][it] } / pairedHours.toFloat()
+
+    val unpairedHours = hoursInRange - pairedHours
 
     return Statistics(
         loggedHours = actual.enteredHours,
@@ -93,7 +118,11 @@ fun computeStatistics(
         daysInRange = filteredDays.size,
         coverage = coverage,
         plannedActivityTotals = planned.totals,
-        actualActivityTotals = actual.totals
+        actualActivityTotals = actual.totals,
+        planVsActual = planVsActualMatrix,
+        pairedHours = pairedHours,
+        adherence = adherence,
+        unpairedHours = unpairedHours
     )
 }
 
@@ -138,4 +167,41 @@ fun daysInRange(
         .toList()
 
     return days
+}
+
+data class ActivityMatrix(
+    val axis: List<Activity>,      // same list, same order, for rows and columns
+    val counts: List<List<Int>>    // counts[row][col]
+)
+
+private fun activityMatrix(
+    pairs: List<Pair<Long, Long>>,
+    activities: List<Activity>
+): ActivityMatrix {
+    // Determine which pairs actually contain non-null and real activities
+    val activityIdSet = activities.map { it.id }.toSet()
+    val usedPairs = pairs.filter { it.first in activityIdSet && it.second in activityIdSet }
+    // filter out all activities that are not used in the pairs list
+    val usedActivityIdSet = (usedPairs.map {it.first}+usedPairs.map {it.second}).toSet()
+    val usedActivities = activities.filter { it.id in usedActivityIdSet }
+    // group pairs and count how many in each group
+    val pairCountsMap = usedPairs.groupingBy { it }.eachCount()
+    val pairCounts = List(usedActivities.size){ row -> List(usedActivities.size) {col ->
+            pairCountsMap[usedActivities[row].id to usedActivities[col].id] ?: 0
+        }
+    }
+
+    return ActivityMatrix(
+        axis = usedActivities,
+        counts = pairCounts
+    )
+}
+
+fun ActivityMatrix.rowFractions(): List<List<Float>> {
+    return List(counts.size){ row ->
+        val rowSum = counts[row].sum()
+        List(counts.size) { col ->
+            if (rowSum > 0) counts[row][col].toFloat()/rowSum.toFloat() else 0.0f
+        }
+    }
 }

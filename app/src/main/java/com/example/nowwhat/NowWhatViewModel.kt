@@ -20,7 +20,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 
 val DEFAULT_ACTIVITY_NAMES: List<String> = listOf("Work", "Sleep", "Gym", "Social", "Dating")
@@ -90,6 +89,9 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     private val _statsFilter = MutableStateFlow(StatsFilter())
     val statsFilter: StateFlow<StatsFilter> = _statsFilter
 
+    private val _statsNormalize = MutableStateFlow(true)
+    val statsNormalize: StateFlow<Boolean> = _statsNormalize
+
     val statistics: StateFlow<Statistics?> = combine(
         entriesFlow,
         activitiesFlow,
@@ -112,6 +114,10 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
     fun setStatsDayType(dayType: DayType) {
         _statsFilter.value = _statsFilter.value.copy(dayType = dayType)
+    }
+
+    fun setStatsNormalize(normalize: Boolean){
+        _statsNormalize.value = normalize
     }
 
     /* ---------------------------- HOUR LOGGING HELPER FUNCTIONS ----------------------------*/
