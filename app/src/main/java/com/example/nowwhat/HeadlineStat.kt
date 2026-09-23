@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.nowwhat.ui.theme.TextColour
@@ -13,12 +14,13 @@ import com.example.nowwhat.ui.theme.TextColour
 fun HeadlineStat(
     value: String,
     label: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    valueStyle: TextStyle = MaterialTheme.typography.headlineSmall
 ) {
     StatsCard(modifier = modifier) {
         Text(
             text = value,
-            style = MaterialTheme.typography.headlineSmall,
+            style = valueStyle,
             color = TextColour,
             maxLines = 1,
             modifier = Modifier.align(Alignment.CenterHorizontally)
