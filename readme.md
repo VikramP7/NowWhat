@@ -239,7 +239,20 @@ Done:
 - [x] Enable Room schema export and commit the v3 baseline (migration-readiness)
 - [x] Write a real `@AutoMigration` (v3 → v4 for the `notes` table) and narrow the destructive fallback to versions 1–2
 - [x] Unify hour/time formatting onto `formatHourLabel`; share one `DateFormatter` for day labels
-- [ ] Add metrics page in settings to show analysis of how time is spent. Total hours (or percentage) spent on each activity; Planned vs. actual by activity confusion matrix; Daily/weekly patterns/changes; Weekday vs. weekend differences; Sleep duration and consistency; Hours that weren't logged
+- [ ] Add metrics page in settings to show analysis of how time is spent.
+  - **Filter Chips:** Two rows, filter by time period (week, month, quarter, all), and by day type (all days, weekdays, weekends).
+  - **Headline Stat Cards:** Total Hours logged, Days tracked fraction, Coverage
+  - **Donut Chart:** Total hours (and percentage) spent on each activity
+  - **Planned vs. Actual Confusion Matrix:** Also shows the plan adherance percentage (responsive to the filter chips) 
+  - **Sleep Headline Stats:** Average bedtime, average hours slept, average wakeup time (responsive to both filter)
+  - **Sleep Bar Chart:** Floating bars, x-axis is night off day of week, normalized top of bar is bedtime, length is sleep time and bottom is waketime the next day. Dotted lines showing timespans average or planned average if feeling like more math. (Only responsive to time period filter, x-axis already does type of day)
+  - **Day Rythm:** 24 Stacked Columns, x-axis one per hour of day, each normalized to the full height, segments coloured based on activity portion. Eg. first column is 6am, 70% of the blocks in the col are sleep and 30% are gym. Follows both filters 
+  - **Portion of Time Line Graph:** Time on x-axis, percentage of time on y-axis.Each activity gets a line. Obeys day type filter, all ways all time. 
+  - **Aspiration Gap:** Per activity, two bars: hours planned vs hours logged (potentially normalized). Follows both filters.
+  - **Transition Matrix:** Similar in structure to Planned vs. Actual, but compares rows are `actual[t]` to cols of `actual[t+1]`. "After Gym you most often do Work."
+  - **Coverage Heatmap:** Github style coverage heatmap, NO STREAKS, to many apps have streaks now a days.
+  - **Random In Between Card Ideas:** Longest recorded sleep, most common first activity of the day, days with synopsis written.
+  Daily/weekly patterns/changes; Weekday vs. weekend differences; Sleep duration and consistency; Hours that weren't logged
 - [x] Daily Synopsis: a `notes` table holding one short diary-style entry per logical day, with the schema migration, backup support, and the editing UI (day-header button + Notes settings screen)
 - [x] Daily Synopsis **notification**: a prompt to write the day's synopsis, with its own enable/disable toggle, a configurable time-of-day, and inline reply from the shade
 - [ ] Merge-style import (currently replace-only); would need activity-ID-collision handling
