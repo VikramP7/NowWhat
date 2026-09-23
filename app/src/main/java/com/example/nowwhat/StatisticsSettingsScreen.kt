@@ -224,6 +224,14 @@ fun StatisticsSettingsScreen(
                                 )
                             }
                         }
+
+                        if(stats.sleepActivity != null){
+                            SleepBarChart(
+                                nights = stats.nightlySleepAverages,
+                                barColour = Color(stats.sleepActivity.colour)
+                            )
+                        }
+
                         // TEMPORARY until chunk 6 draws the bars
                         Column {
                             stats.nightlySleepAverages.forEach { (day, average) ->
@@ -249,17 +257,20 @@ fun StatisticsSettingsScreen(
                         HeadlineStat(
                             value = sleepAverage?.let { formatClockLabel(it.bedMinuteOfDay, is24Hour) } ?: "—",
                             label = "Avg Bedtime",
-                            modifier = Modifier.weight(1f).fillMaxHeight()
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            valueStyle = MaterialTheme.typography.titleLarge
                         )
                         HeadlineStat(
                             value = sleepAverage?.let { formatDurationLabel(it.hours) } ?: "—",
                             label = "Avg Sleep",
-                            modifier = Modifier.weight(1f).fillMaxHeight()
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            valueStyle = MaterialTheme.typography.titleLarge
                         )
                         HeadlineStat(
                             value = sleepAverage?.let { formatClockLabel(it.wakeMinuteOfDay, is24Hour) } ?: "—",
                             label = "Avg Waketime",
-                            modifier = Modifier.weight(1f).fillMaxHeight()
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            valueStyle = MaterialTheme.typography.titleLarge
                         )
                     }
                 }

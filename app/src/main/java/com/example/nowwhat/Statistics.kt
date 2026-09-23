@@ -322,8 +322,8 @@ data class SleepAverage(
     val nights: Int
 ){
     val wakeOffset: Float get() = bedOffset+hours
-    val bedMinuteOfDay: Int = offsetToRoundedMinutes(bedOffset)
-    val wakeMinuteOfDay: Int = offsetToRoundedMinutes(wakeOffset)
+    val bedMinuteOfDay: Int get() = offsetToRoundedMinutes(bedOffset)
+    val wakeMinuteOfDay: Int get() = offsetToRoundedMinutes(wakeOffset)
 }
 
 private fun roundToNearestFive(value: Float):Int{
