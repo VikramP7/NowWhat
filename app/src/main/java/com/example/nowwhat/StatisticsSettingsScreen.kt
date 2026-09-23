@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -21,12 +23,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.OrphanedColour
 import com.example.nowwhat.ui.theme.TextColour
 import com.example.nowwhat.ui.theme.UnloggedColour
+import java.time.format.TextStyle as DateTextStyle
+import java.util.Locale
 import kotlin.math.roundToInt
 
 @Composable
@@ -36,9 +41,11 @@ fun StatisticsSettingsScreen(
     onNavigate: (nextScreenState: AppScreenState) -> Unit
 ) {
 
+    val activities by viewModel.activities.collectAsState()
     val statistics by viewModel.statistics.collectAsState()
     val filter by viewModel.statsFilter.collectAsState()
     val normalized by viewModel.statsNormalize.collectAsState()
+    val is24Hour by viewModel.is24Hour.collectAsState()
 
     Scaffold(
         modifier = modifier,
@@ -191,8 +198,100 @@ fun StatisticsSettingsScreen(
                             )
                         }
                     }
+                } // END Plan vs Actual Matrix
+
+                // -------- SLEEP --------
+                val sleepAverage = stats.sleepAverage
+
+                item {
+                    StatsCard(
+                        title = "Sleep"
+                    ) {
+                        if (stats.sleepActivity == null) {
+                            Text("Choose which activity means sleep", color = TextColour)
+                        }else{
+                            Row {
+                                Text("Sleep is tracked as ", color = TextColour)
+                                Text(stats.sleepActivity.name, color = Color(stats.sleepActivity.colour))
+                            }
+                        }
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)){
+                            items(activities, key = { it.id }){ activity ->
+                                PresetButton(
+                                    activity = activity,
+                                    onClick = {viewModel.setSleepActivityId(activity.id)},
+                                    filled = stats.sleepActivity?.id == activity.id
+                                )
+                            }
+                        }
+                        // TEMPORARY until chunk 6 draws the bars
+                        Column {
+                            stats.nightlySleepAverages.forEach { (day, average) ->
+                                val dayName = day.getDisplayName(DateTextStyle.SHORT, Locale.getDefault())
+                                Text(
+                                    text = if (average == null) "$dayName night: —"
+                                    else "$dayName night: ${formatDurationLabel(average.hours)}, " +
+                                            "${formatClockLabel(average.bedMinuteOfDay, is24Hour)}–" +
+                                            "${formatClockLabel(average.wakeMinuteOfDay, is24Hour)} " +
+                                            "(${average.nights})",
+                                    color = TextColour
+                                )
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Row(
+                        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        HeadlineStat(
+                            value = sleepAverage?.let { formatClockLabel(it.bedMinuteOfDay, is24Hour) } ?: "—",
+                            label = "Avg Bedtime",
+                            modifier = Modifier.weight(1f).fillMaxHeight()
+                        )
+                        HeadlineStat(
+                            value = sleepAverage?.let { formatDurationLabel(it.hours) } ?: "—",
+                            label = "Avg Sleep",
+                            modifier = Modifier.weight(1f).fillMaxHeight()
+                        )
+                        HeadlineStat(
+                            value = sleepAverage?.let { formatClockLabel(it.wakeMinuteOfDay, is24Hour) } ?: "—",
+                            label = "Avg Waketime",
+                            modifier = Modifier.weight(1f).fillMaxHeight()
+                        )
+                    }
+                }
+
+                item {
+                    Text(
+                        text = sleepCaption(
+                            nights = sleepAverage?.nights,
+                            dayType = filter.dayType
+                        ),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontStyle = FontStyle.Italic,
+                        color = TextColour,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
     }
+}
+
+// The caption under the three sleep cards. The night names come from DayType.nightList,
+// the same list the average was filtered by, so the caption can't disagree with the numbers.
+private fun sleepCaption(nights: Int?, dayType: DayType): String {
+    if (nights == null) return "No complete nights in this range"
+
+    val nightWord = if (nights == 1) "night" else "nights"
+    val whichNights =
+        if (dayType == DayType.ALL) ""
+        else " · " + dayType.nightList.joinToString(", ") {
+            it.getDisplayName(DateTextStyle.SHORT, Locale.getDefault())
+        }
+    return "Averaged over $nights $nightWord$whichNights"
 }

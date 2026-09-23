@@ -96,9 +96,10 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         entriesFlow,
         activitiesFlow,
         settingsStore.dayStartHour,
-        _statsFilter
-    ) { entries, activities, startHour, filter ->
-        computeStatistics(entries, activities, startHour, filter)
+        _statsFilter,
+        settingsStore.sleepActivityId
+    ) { entries, activities, startHour, filter, sleepActivityId ->
+        computeStatistics(entries, activities, startHour, sleepActivityId, filter)
     }
         .flowOn(Dispatchers.Default)
         .stateIn(
@@ -107,7 +108,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
             initialValue = null
         )
 
-    /* ---------------------------- DEFAULT SCHEDULE HELPER FUNCTIONS ----------------------------*/
+    /* ---------------------------- STATS HELPER FUNCTIONS ----------------------------*/
     fun setStatsWindow(window: StatsWindow) {
         _statsFilter.value = _statsFilter.value.copy(window = window)
     }
@@ -118,6 +119,12 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
     fun setStatsNormalize(normalize: Boolean){
         _statsNormalize.value = normalize
+    }
+
+    fun setSleepActivityId(id: Long){
+        viewModelScope.launch {
+            settingsStore.setSleepActivityId(id)
+        }
     }
 
     /* ---------------------------- HOUR LOGGING HELPER FUNCTIONS ----------------------------*/
@@ -276,6 +283,9 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                 }
             }
             curActivities.drop(DEFAULT_ACTIVITY_NAMES.size).forEach { activityDao.delete(it) }
+
+            // As Activity IDs are reused the reset sleep ID now might point to a non-sleep activity so reset
+            settingsStore.clearSleepActivityId()
         }
     }
 
@@ -422,6 +432,12 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         initialValue = 21
     )
 
+    val sleepActivityId = settingsStore.sleepActivityId.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = null
+    )
+
     /* ---------------------------- SETTINGS FUNCTIONS ----------------------------*/
     fun setIs24Hour(value: Boolean) {
         viewModelScope.launch {
@@ -502,6 +518,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                     activityDao.insertAll(data.activities)
                     noteDao.insertAll(data.notes)
                 }
+                settingsStore.clearSleepActivityId()
                 true
             } catch (e: Exception) {
                 false

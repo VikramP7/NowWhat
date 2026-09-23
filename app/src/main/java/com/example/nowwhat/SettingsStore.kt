@@ -24,6 +24,7 @@ class SettingsStore(private val context: Context) {
         val DND_END_HOUR = intPreferencesKey("dnd_end_hour")
         val NOTE_NOTIFICATION_ENABLED = booleanPreferencesKey("note_notifications_enabled")
         val NOTE_NOTIFICATION_HOUR = intPreferencesKey("note_notification_hour")
+        val SLEEP_ACTIVITY_ID = longPreferencesKey("sleep_activity_id")
     }
 
     //READ
@@ -57,6 +58,10 @@ class SettingsStore(private val context: Context) {
 
     val noteNotificationHour: Flow<Int> = context.dataStore.data.map { prefs ->
         prefs[Keys.NOTE_NOTIFICATION_HOUR] ?: 21
+    }
+
+    val sleepActivityId: Flow<Long?> = context.dataStore.data.map { prefs ->
+        prefs[Keys.SLEEP_ACTIVITY_ID]
     }
 
     // WRITE
@@ -105,6 +110,18 @@ class SettingsStore(private val context: Context) {
     suspend fun setNoteNotificationHour(value: Int) {
         context.dataStore.edit { prefs ->
             prefs[Keys.NOTE_NOTIFICATION_HOUR] = value
+        }
+    }
+
+    suspend fun setSleepActivityId(value: Long){
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SLEEP_ACTIVITY_ID] = value
+        }
+    }
+
+    suspend fun clearSleepActivityId(){
+        context.dataStore.edit { prefs ->
+            prefs.remove(Keys.SLEEP_ACTIVITY_ID)
         }
     }
 }
