@@ -95,7 +95,7 @@ fun StatisticsSettingsScreen(
             }
             val stats = statistics
             if (stats == null) {
-                item { Text(text = "Crunching the numbers...") }
+                item { Text(text = "Crunching the numbers...", color = TextColour) }
             } else {
 
                 item {
@@ -152,7 +152,7 @@ fun StatisticsSettingsScreen(
                         title = "Plan vs Actual"
                     ) {
                         if (stats.adherence == null){
-                            Text("No data in selected range...")
+                            Text("No data in selected range...", color = TextColour)
                         } else{
                             Column(
                                 modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -213,6 +213,7 @@ fun StatisticsSettingsScreen(
                             Row {
                                 Text("Sleep is tracked as ", color = TextColour)
                                 Text(stats.sleepActivity.name, color = Color(stats.sleepActivity.colour))
+                                Text(":", color = TextColour)
                             }
                         }
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)){
@@ -228,23 +229,13 @@ fun StatisticsSettingsScreen(
                         if(stats.sleepActivity != null){
                             SleepBarChart(
                                 nights = stats.nightlySleepAverages,
-                                barColour = Color(stats.sleepActivity.colour)
+                                plannedNights = stats.nightlyPlannedSleepAverages,
+                                average = stats.sleepAverage,
+                                plannedAverage = stats.plannedSleepAverage,
+                                barColour = Color(stats.sleepActivity.colour),
+                                labelColour = TextColour,
+                                is24Hour = is24Hour
                             )
-                        }
-
-                        // TEMPORARY until chunk 6 draws the bars
-                        Column {
-                            stats.nightlySleepAverages.forEach { (day, average) ->
-                                val dayName = day.getDisplayName(DateTextStyle.SHORT, Locale.getDefault())
-                                Text(
-                                    text = if (average == null) "$dayName night: —"
-                                    else "$dayName night: ${formatDurationLabel(average.hours)}, " +
-                                            "${formatClockLabel(average.bedMinuteOfDay, is24Hour)}–" +
-                                            "${formatClockLabel(average.wakeMinuteOfDay, is24Hour)} " +
-                                            "(${average.nights})",
-                                    color = TextColour
-                                )
-                            }
                         }
                     }
                 }

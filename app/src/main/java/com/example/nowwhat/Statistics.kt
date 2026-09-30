@@ -61,7 +61,9 @@ data class Statistics(
 
     val sleepActivity: Activity?,
     val sleepAverage: SleepAverage?,
-    val nightlySleepAverages: Map<DayOfWeek, SleepAverage?>
+    val plannedSleepAverage: SleepAverage?,
+    val nightlySleepAverages: Map<DayOfWeek, SleepAverage?>,
+    val nightlyPlannedSleepAverages: Map<DayOfWeek, SleepAverage?>
 )
 
 fun computeStatistics(
@@ -151,10 +153,24 @@ fun computeStatistics(
         emptyList()
     }
 
+    val plannedSleepEpisodes: List<SleepEpisode> = if (sleepActivity != null){
+        findSleepEpisodes(
+            entries = entries,
+            sleepActivityId = sleepActivity.id,
+            dayStartHour = dayStartHour,
+            windowNightSet = windowNights,
+            plannedSleep = true
+        )
+    }else{
+        emptyList()
+    }
+
     val filteredSleepAverage = averageSleep(sleepEpisodes.filter { it.nightOf.dayOfWeek in filter.dayType.nightList })
+    val filteredPlannedSleepAverage = averageSleep(plannedSleepEpisodes.filter { it.nightOf.dayOfWeek in filter.dayType.nightList })
 
     // sort into day type
     val sleepDaysOfWeekAverages = DayOfWeek.entries.associateWith { day -> averageSleep(sleepEpisodes.filter { it.nightOf.dayOfWeek == day }) }
+    val plannedSleepDaysOfWeekAverages = DayOfWeek.entries.associateWith { day -> averageSleep(plannedSleepEpisodes.filter { it.nightOf.dayOfWeek == day }) }
 
 
     return Statistics(
@@ -176,7 +192,9 @@ fun computeStatistics(
         unpairedHours = unpairedHours,
         sleepActivity = sleepActivity,
         sleepAverage = filteredSleepAverage,
+        plannedSleepAverage = filteredPlannedSleepAverage,
         nightlySleepAverages = sleepDaysOfWeekAverages,
+        nightlyPlannedSleepAverages = plannedSleepDaysOfWeekAverages
     )
 }
 
@@ -268,14 +286,18 @@ data class SleepEpisode(
     val hours: Int get() = ((wakeTime-bedTime)/HOUR_MS).toInt()
 }
 
-private fun findSleepEpisodes(entries: List<HourEntry>, sleepActivityId: Long, dayStartHour:Int, windowNightSet: Set<LocalDate>): List<SleepEpisode>{
+private fun findSleepEpisodes(entries: List<HourEntry>, sleepActivityId: Long, dayStartHour:Int, windowNightSet: Set<LocalDate>, plannedSleep: Boolean = false): List<SleepEpisode>{
 
 
     fun closeRun(bed: Long, wake: Long) = SleepEpisode(bed, wake, logicalDateOf(bed, dayStartHour))
 
     // filter out non-sleep activities
     val sleepEntries = entries.filter { entry ->
-        (entry.actualActivityId == sleepActivityId)
+        if (plannedSleep){
+            (entry.plannedActivityId == sleepActivityId)
+        }else {
+            (entry.actualActivityId == sleepActivityId)
+        }
     }.sortedBy { entry -> entry.timestamp } // sorted by chronological order oldest to newest entries
 
     val sleepEpisodes: MutableList<SleepEpisode> = mutableListOf()
@@ -322,14 +344,14 @@ data class SleepAverage(
     val nights: Int
 ){
     val wakeOffset: Float get() = bedOffset+hours
-    val bedMinuteOfDay: Int get() = offsetToRoundedMinutes(bedOffset)
-    val wakeMinuteOfDay: Int get() = offsetToRoundedMinutes(wakeOffset)
+    val bedMinuteOfDay: Int get() = sleepOffsetToMinuteOfDay(bedOffset)
+    val wakeMinuteOfDay: Int get() = sleepOffsetToMinuteOfDay(wakeOffset)
 }
 
 private fun roundToNearestFive(value: Float):Int{
     return (value/5).roundToInt()*5
 }
-private fun offsetToRoundedMinutes(offset: Float):Int{
+fun sleepOffsetToMinuteOfDay(offset: Float):Int{
     val minutes = roundToNearestFive((offset+SLEEP_PIVOT_HOUR)*60)
     return wrapRange(minutes, top = 24 * 60 - 1)
 }
