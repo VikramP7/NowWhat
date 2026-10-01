@@ -121,13 +121,7 @@ fun StatisticsSettingsScreen(
                         )
                     }
                 }
-
-                val slices: MutableList<DonutSlice> =
-                    stats.actualActivityTotals.filter { it.hours>0 }.map {
-                        DonutSlice(it.activity.name, Color(it.activity.colour), it.hours)
-                }.toMutableList()
-                if (stats.orphanedLogHours>0) slices.add(DonutSlice("Deleted Activities", OrphanedColour, stats.orphanedLogHours ))
-                if (stats.blankLogHours>0) slices.add(DonutSlice("Unlogged", UnloggedColour, stats.blankLogHours ))
+                val slices = stackSlices(stats.actualActivityTotals, stats.orphanedLogHours, stats.blankLogHours)
 
                 item {
                     StatsCard(
@@ -279,6 +273,30 @@ fun StatisticsSettingsScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+
+                val rhythmColumns = stats.dayRhythm.map { stackSlices(it.totals, it.orphanedHours, it.blankHours) }
+
+                item {
+                    StatsCard(title = "Day Rhythm") {
+                        StackedColumnChart(columns = rhythmColumns)
+                    }
+                }
+
+                // TEMPORARY (7a): prove the rhythm numbers before drawing them. Deleted in 7c.
+                item {
+                    StatsCard(title = "Day Rhythm (debug)") {
+                        Column {
+                            stats.dayRhythm.forEach { col ->
+                                val mix = col.totals.joinToString { "${it.activity.name} ${it.hours}" }
+                                Text(
+                                    text = "${formatHourLabel(col.clockHour, is24Hour)}: $mix · del ${col.orphanedHours} · blank ${col.blankHours}/${col.columnHours}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextColour
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -296,4 +314,13 @@ private fun sleepCaption(nights: Int?, dayType: DayType): String {
             it.getDisplayName(DateTextStyle.SHORT, Locale.getDefault())
         }
     return "Averaged over $nights $nightWord$whichNights"
+}
+
+private fun stackSlices(totals: List<ActivityTotal>, orphanedHours: Int, blankHours: Int): List<DonutSlice>{
+    val slices: MutableList<DonutSlice> =
+        totals.map {DonutSlice(it.activity.name, Color(it.activity.colour), it.hours)
+        }.toMutableList()
+    if (orphanedHours>0) slices.add(DonutSlice("Deleted Activities", OrphanedColour, orphanedHours ))
+    if (blankHours>0) slices.add(DonutSlice("Unlogged", UnloggedColour, blankHours ))
+    return slices.toList()
 }

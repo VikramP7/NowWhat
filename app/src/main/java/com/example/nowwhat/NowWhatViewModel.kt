@@ -166,7 +166,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
             // eg. Morning(6-11), Day(12-17), Evening(18-23), Night(0-5)
             val rows = (0..3).map { band ->
                 (0..5).map { offset ->
-                    hourSlots[(dayStartHour + (band * 6) + offset) % 24]
+                    hourSlots[clockHourOf((band * 6) + offset, dayStartHour)]
                 }
             }
 
@@ -338,7 +338,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
         return (0..3).map { band ->
             (0..5).map { offset ->
-                hourSlots[(dayStartHour + (band * 6) + offset) % 24]
+                hourSlots[clockHourOf((band * 6) + offset, dayStartHour)]
             }
         }
     }

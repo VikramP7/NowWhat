@@ -41,6 +41,15 @@ fun scheduleWeekdayFor(hourOfDay: Int, selectedDay: Int, dayStartHour: Int): Int
 fun hourOfDay(timestamp: Long, zone: ZoneId = ZoneId.systemDefault()): Int =
     Instant.ofEpochMilli(timestamp).atZone(zone).hour
 
+// clock hour (0–23) -> hours since the logical day began (0 = the day-start hour)
+fun logicalHourOf(clockHour: Int, dayStartHour: Int): Int{
+    return wrapRange(clockHour-dayStartHour)
+}
+// logical hour (0–23) -> the clock hour it falls on
+fun clockHourOf(logicalHour: Int, dayStartHour: Int): Int{
+    return wrapRange(logicalHour+dayStartHour)
+}
+
 fun dayOfWeek(timestamp: Long, zone: ZoneId = ZoneId.systemDefault()): Int =
     Instant.ofEpochMilli(timestamp).atZone(zone).dayOfWeek.value
 

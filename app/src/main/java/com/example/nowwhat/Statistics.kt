@@ -63,7 +63,9 @@ data class Statistics(
     val sleepAverage: SleepAverage?,
     val plannedSleepAverage: SleepAverage?,
     val nightlySleepAverages: Map<DayOfWeek, SleepAverage?>,
-    val nightlyPlannedSleepAverages: Map<DayOfWeek, SleepAverage?>
+    val nightlyPlannedSleepAverages: Map<DayOfWeek, SleepAverage?>,
+
+    val dayRhythm: List<RhythmColumn>
 )
 
 fun computeStatistics(
@@ -94,8 +96,9 @@ fun computeStatistics(
     )
 
     val cutoff = truncateToHour(now)
+    val finishedHoursToday = logicalHourOf(hourOfDay(now), dayStartHour)
     val daySet = filteredDays.toSet()
-    val inRangeEntries = entries.filter {
+    val inRangeEntries = entries.filter { // contains logged, blank, and orphaned entries
         (it.timestamp < cutoff) && (logicalDateOf(it.timestamp, dayStartHour) in daySet)
     }
 
@@ -103,7 +106,7 @@ fun computeStatistics(
     val daysTracked = inRangeEntries.filter { activityMap[it.actualActivityId] != null }.distinctBy { logicalDateOf(it.timestamp, dayStartHour) }.size
 
     val hoursInRange = filteredDays.sumOf { date ->
-        if (date == today) wrapRange(hourOfDay(now) - dayStartHour) else 24
+        if (date == today) finishedHoursToday else 24
     }
 
     // -------- DONUT CHART VALUES --------
@@ -172,6 +175,23 @@ fun computeStatistics(
     val sleepDaysOfWeekAverages = DayOfWeek.entries.associateWith { day -> averageSleep(sleepEpisodes.filter { it.nightOf.dayOfWeek == day }) }
     val plannedSleepDaysOfWeekAverages = DayOfWeek.entries.associateWith { day -> averageSleep(plannedSleepEpisodes.filter { it.nightOf.dayOfWeek == day }) }
 
+    // -------- DAY RHYTHM --------
+    val daysBeforeToday = filteredDays.count { it != today }
+
+    val rhythmColumns = List(24) { logicalHour ->
+        val clockHour = clockHourOf(logicalHour,dayStartHour)
+        val col = inRangeEntries.filter { entry -> clockHour == hourOfDay(entry.timestamp) }
+        val sideTotals = totalsFor(col.map { it.actualActivityId }, activityMap)
+        val totalsById = sideTotals.totals.associateBy { it.activity.id }
+        val orderedTotals = activities.mapNotNull { activity -> totalsById[activity.id] }
+        RhythmColumn(
+            clockHour = clockHour,
+            totals = orderedTotals,
+            orphanedHours = sideTotals.orphanedHours,
+            columnHours = daysBeforeToday + if (logicalHour < finishedHoursToday && today in daySet) 1 else 0
+        )
+    }
+
 
     return Statistics(
         loggedHours = actual.enteredHours,
@@ -194,7 +214,8 @@ fun computeStatistics(
         sleepAverage = filteredSleepAverage,
         plannedSleepAverage = filteredPlannedSleepAverage,
         nightlySleepAverages = sleepDaysOfWeekAverages,
-        nightlyPlannedSleepAverages = plannedSleepDaysOfWeekAverages
+        nightlyPlannedSleepAverages = plannedSleepDaysOfWeekAverages,
+        dayRhythm = rhythmColumns
     )
 }
 
@@ -363,6 +384,15 @@ private fun averageSleep(episodes: List<SleepEpisode>): SleepAverage?{
     val sumHours = episodes.sumOf { episode -> episode.hours }.toFloat()
     val sleepAverage = SleepAverage(sumBedTime/episodes.size,sumHours/episodes.size,episodes.size)
 
-
     return sleepAverage
+}
+
+data class RhythmColumn(
+    val clockHour: Int,              // the real hour this column shows (for 7c's labels)
+    val totals: List<ActivityTotal>, // activities order; only activities with hours here
+    val orphanedHours: Int,
+    val columnHours: Int             // from the calendar: how many of this hour fell in range
+) {
+    val loggedHours: Int get() = totals.sumOf { it.hours }
+    val blankHours: Int get() = columnHours - loggedHours - orphanedHours
 }

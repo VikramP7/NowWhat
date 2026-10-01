@@ -25,11 +25,11 @@ fun DaySection(
     selectedHourOfDay: Int? = null,
 ) {
     // 0..23 hours past the day's start, or null
-    val selectedOffset = selectedHourOfDay?.let { (it - dayStartHour + 24) % 24 }
+    val selectedOffset = selectedHourOfDay?.let {logicalHourOf (it, dayStartHour)}
 
     val bandNames = listOf("Morning", "Day", "Evening", "Night")
     val dayPartLabels = bandNames.mapIndexed { index, name ->
-        "$name ${formatHourLabel((dayStartHour + index * 6) % 24, is24Hour)}"
+        "$name ${formatHourLabel(clockHourOf(index * 6, dayStartHour), is24Hour)}"
     }
     Column(modifier = modifier) {
         Row(
@@ -55,7 +55,7 @@ fun DaySection(
                     label = dayPartLabels[index],
                     hourSlots = row,
                     selectedHourInRow = selectedInRow,
-                    onClick = { hourInRow -> onClick((dayStartHour + (index * 6) + hourInRow) % 24) }
+                    onClick = { hourInRow -> onClick(clockHourOf(index * 6 + hourInRow, dayStartHour)) }
                 )
             }
         }
