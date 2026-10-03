@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-data class DonutSlice(
+data class ChartSlice(
     val label: String,
     val colour: Color,
     val hours: Int
@@ -22,7 +22,7 @@ data class DonutSlice(
 
 @Composable
 fun DonutChart(
-    slices: List<DonutSlice>,
+    slices: List<ChartSlice>,
     modifier: Modifier = Modifier,
     ringThickness: Dp = 36.dp,
     centreContent: @Composable () -> Unit = {}

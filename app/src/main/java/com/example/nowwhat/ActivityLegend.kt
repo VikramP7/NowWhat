@@ -19,16 +19,31 @@ import com.example.nowwhat.ui.theme.LightActivityColours
 import com.example.nowwhat.ui.theme.TextColour
 
 
+// activities into name/colour pairs and hands them to SwatchLegend.
 @Composable
 fun ActivityLegend(
     activityList: List<Activity>,
+    modifier: Modifier = Modifier
+) {
+    SwatchLegend(
+        entries = activityList.map { it.name to Color(it.colour) },
+        modifier = modifier
+    )
+}
+
+// The one home for the swatch-and-name legend look. It takes plain name/colour pairs rather
+// than activities, so it can also key things that aren't activities (Unlogged, Deleted
+// Activities) without inventing fake Activity objects for them.
+@Composable
+fun SwatchLegend(
+    entries: List<Pair<String, Color>>,
     modifier: Modifier = Modifier
 ) {
     LazyRow(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(activityList) { activity ->
+        items(entries) { (name, colour) ->
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -36,10 +51,10 @@ fun ActivityLegend(
                 Box(
                     modifier = Modifier
                         .size(12.dp)
-                        .background(Color(activity.colour))
+                        .background(colour)
                 )
                 Text(
-                    text = activity.name,
+                    text = name,
                     style = MaterialTheme.typography.labelMedium,
                     color = TextColour
                 )

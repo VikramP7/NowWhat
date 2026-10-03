@@ -22,7 +22,7 @@ import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
 fun DonutLegend(
-    slices: List<DonutSlice>,
+    slices: List<ChartSlice>,
     modifier: Modifier = Modifier
 ) {
     val total = slices.sumOf { it.hours }

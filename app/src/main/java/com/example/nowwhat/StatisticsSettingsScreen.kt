@@ -30,6 +30,7 @@ import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.OrphanedColour
 import com.example.nowwhat.ui.theme.TextColour
 import com.example.nowwhat.ui.theme.UnloggedColour
+import java.time.DayOfWeek
 import java.time.format.TextStyle as DateTextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -274,26 +275,38 @@ fun StatisticsSettingsScreen(
                     )
                 }
 
+                // -------- DAY RHYTHM --------
                 val rhythmColumns = stats.dayRhythm.map { stackSlices(it.totals, it.orphanedHours, it.blankHours) }
+                // Built by the same rule as the stacks, so the legend reads left to right in the
+                // order the columns stack bottom to top.
+                val rhythmLegend = stackSlices(
+                    totals = stats.actualActivityTotals.inOrderOf(activities),
+                    orphanedHours = stats.orphanedLogHours,
+                    blankHours = stats.blankLogHours
+                )
+                // A label every 6 hours, on the same boundaries as the Morning/Day/Evening/Night
+                // rows of the hours view. Index = logical hour, so column 0 is the day start.
+                val rhythmLabels = stats.dayRhythm.mapIndexed { logicalHour, col ->
+                    if (logicalHour % 6 == 0) formatHourLabel(col.clockHour, is24Hour) else null
+                }
 
                 item {
                     StatsCard(title = "Day Rhythm") {
-                        StackedColumnChart(columns = rhythmColumns)
-                    }
-                }
-
-                // TEMPORARY (7a): prove the rhythm numbers before drawing them. Deleted in 7c.
-                item {
-                    StatsCard(title = "Day Rhythm (debug)") {
-                        Column {
-                            stats.dayRhythm.forEach { col ->
-                                val mix = col.totals.joinToString { "${it.activity.name} ${it.hours}" }
-                                Text(
-                                    text = "${formatHourLabel(col.clockHour, is24Hour)}: $mix · del ${col.orphanedHours} · blank ${col.blankHours}/${col.columnHours}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = TextColour
-                                )
-                            }
+                        if (stats.hoursInRange == 0) {
+                            Text("No hours in this range yet", color = TextColour)
+                        } else {
+                            StackedColumnChart(
+                                columns = rhythmColumns,
+                                labels = rhythmLabels,
+                                labelColour = TextColour
+                            )
+                            SwatchLegend(entries = rhythmLegend.map { it.label to it.colour })
+                            Text(
+                                text = rhythmCaption(days = stats.daysInRange, dayType = filter.dayType),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = TextColour
+                            )
                         }
                     }
                 }
@@ -308,19 +321,28 @@ private fun sleepCaption(nights: Int?, dayType: DayType): String {
     if (nights == null) return "No complete nights in this range"
 
     val nightWord = if (nights == 1) "night" else "nights"
-    val whichNights =
-        if (dayType == DayType.ALL) ""
-        else " · " + dayType.nightList.joinToString(", ") {
-            it.getDisplayName(DateTextStyle.SHORT, Locale.getDefault())
-        }
+    val whichNights = if (dayType == DayType.ALL) "" else " · " + shortDayNames(dayType.nightList)
     return "Averaged over $nights $nightWord$whichNights"
 }
 
-private fun stackSlices(totals: List<ActivityTotal>, orphanedHours: Int, blankHours: Int): List<DonutSlice>{
-    val slices: MutableList<DonutSlice> =
-        totals.map {DonutSlice(it.activity.name, Color(it.activity.colour), it.hours)
+// The caption under the day rhythm. It names the *days* (dayList), where sleepCaption names the
+// nights: the Weekends chip means Sat/Sun here but Fri/Sat nights on the sleep chart, and saying
+// which is what stops the two from looking like they disagree.
+private fun rhythmCaption(days: Int, dayType: DayType): String {
+    val dayWord = if (days == 1) "day" else "days"
+    val whichDays = if (dayType == DayType.ALL) "" else " · " + shortDayNames(dayType.dayList)
+    return "Each column is one hour of the day, across $days $dayWord$whichDays"
+}
+
+// "Fri, Sat" — the one home for how both captions spell out a list of weekdays.
+private fun shortDayNames(days: List<DayOfWeek>): String =
+    days.joinToString(", ") { it.getDisplayName(DateTextStyle.SHORT, Locale.getDefault()) }
+
+private fun stackSlices(totals: List<ActivityTotal>, orphanedHours: Int, blankHours: Int): List<ChartSlice>{
+    val slices: MutableList<ChartSlice> =
+        totals.map {ChartSlice(it.activity.name, Color(it.activity.colour), it.hours)
         }.toMutableList()
-    if (orphanedHours>0) slices.add(DonutSlice("Deleted Activities", OrphanedColour, orphanedHours ))
-    if (blankHours>0) slices.add(DonutSlice("Unlogged", UnloggedColour, blankHours ))
+    if (orphanedHours>0) slices.add(ChartSlice("Deleted Activities", OrphanedColour, orphanedHours ))
+    if (blankHours>0) slices.add(ChartSlice("Unlogged", UnloggedColour, blankHours ))
     return slices.toList()
 }

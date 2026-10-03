@@ -38,6 +38,13 @@ data class ActivityTotal(
     val hours: Int
 )
 
+// Re-sorts totals into the stable activities-table order, so a colour keeps its place across
+// columns, filters and legends. Totals whose activity isn't in the list are dropped.
+fun List<ActivityTotal>.inOrderOf(activities: List<Activity>): List<ActivityTotal> {
+    val byId = associateBy { it.activity.id }
+    return activities.mapNotNull { byId[it.id] }
+}
+
 data class Statistics(
     val loggedHours: Int,
     val blankLogHours: Int,
@@ -182,8 +189,7 @@ fun computeStatistics(
         val clockHour = clockHourOf(logicalHour,dayStartHour)
         val col = inRangeEntries.filter { entry -> clockHour == hourOfDay(entry.timestamp) }
         val sideTotals = totalsFor(col.map { it.actualActivityId }, activityMap)
-        val totalsById = sideTotals.totals.associateBy { it.activity.id }
-        val orderedTotals = activities.mapNotNull { activity -> totalsById[activity.id] }
+        val orderedTotals = sideTotals.totals.inOrderOf(activities)
         RhythmColumn(
             clockHour = clockHour,
             totals = orderedTotals,
