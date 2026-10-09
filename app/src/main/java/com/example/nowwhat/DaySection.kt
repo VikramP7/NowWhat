@@ -29,7 +29,7 @@ fun DaySection(
 
     val bandNames = listOf("Morning", "Day", "Evening", "Night")
     val dayPartLabels = bandNames.mapIndexed { index, name ->
-        "$name ${formatHourLabel(clockHourOf(index * 6, dayStartHour), is24Hour)}"
+        "$name ${formatHourLabel(clockHourOf(index * BAND_HOURS, dayStartHour), is24Hour)}"
     }
     Column(modifier = modifier) {
         Row(
@@ -48,14 +48,14 @@ fun DaySection(
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             hourRows.forEachIndexed { index, row ->
                 val selectedInRow =
-                    if (selectedOffset != null && selectedOffset / 6 == index) selectedOffset % 6
+                    if (selectedOffset != null && selectedOffset / BAND_HOURS == index) selectedOffset % BAND_HOURS
                     else null
 
                 PartOfDayRow(
                     label = dayPartLabels[index],
                     hourSlots = row,
                     selectedHourInRow = selectedInRow,
-                    onClick = { hourInRow -> onClick(clockHourOf(index * 6 + hourInRow, dayStartHour)) }
+                    onClick = { hourInRow -> onClick(clockHourOf(index * BAND_HOURS + hourInRow, dayStartHour)) }
                 )
             }
         }

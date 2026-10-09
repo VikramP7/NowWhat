@@ -25,9 +25,6 @@ interface HourEntryDao {
     @Query("SELECT * FROM hour_entries ORDER BY timestamp DESC")
     fun getAll(): Flow<List<HourEntry>>
 
-    @Query("SELECT * FROM hour_entries WHERE timestamp >= :since ORDER BY timestamp DESC")
-    fun getSince(since: Long): Flow<List<HourEntry>>
-
     @Query("DELETE FROM hour_entries")
     suspend fun deleteAll()
 }

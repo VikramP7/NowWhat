@@ -99,7 +99,13 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         _statsFilter,
         settingsStore.sleepActivityId
     ) { entries, activities, startHour, filter, sleepActivityId ->
-        computeStatistics(entries, activities, startHour, sleepActivityId, filter)
+        computeStatistics(
+            entries = entries,
+            activities = activities,
+            dayStartHour = startHour,
+            sleepActivityId = sleepActivityId,
+            filter = filter
+        )
     }
         .flowOn(Dispatchers.Default)
         .stateIn(
@@ -128,6 +134,13 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /* ---------------------------- HOUR LOGGING HELPER FUNCTIONS ----------------------------*/
+    private fun bandSlice(hourSlots: Array<HourSlot?>, dayStartHour: Int): List<List<HourSlot?>> {
+        return (0 until (HOURS_IN_DAY/BAND_HOURS)).map { band ->
+            (0 until BAND_HOURS).map { offset ->
+                hourSlots[clockHourOf((band * BAND_HOURS) + offset, dayStartHour)]
+            }
+        }
+    }
     private fun transformIntoDays(entries: List<HourEntry>, activities: List<Activity>, notes: List<Note>, dayStartHour: Int): List<Day> {
         // Build a lookup map by activityId to Activity object
         val activityMap: Map<Long, Activity> = activities.associateBy { it.id }
@@ -150,7 +163,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         // For each date, build a Day object
         return validDaysSet.sortedDescending().map {date ->
             // Build 24-hour slots, one per hour, all starting null
-            val hourSlots = arrayOfNulls<HourSlot>(24)
+            val hourSlots = arrayOfNulls<HourSlot>(HOURS_IN_DAY)
 
             // Place each entry into the correct hour slot
             groupedEntryMap[date].orEmpty().forEach { entry ->
@@ -164,11 +177,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
             // Slice into 4 bands
             // eg. Morning(6-11), Day(12-17), Evening(18-23), Night(0-5)
-            val rows = (0..3).map { band ->
-                (0..5).map { offset ->
-                    hourSlots[clockHourOf((band * 6) + offset, dayStartHour)]
-                }
-            }
+            val rows = bandSlice(hourSlots,dayStartHour)
 
             Day(date = date.format(DateFormatter), hourRows = rows, localDate = date, note = noteMap[date]?.text)
         }
@@ -328,7 +337,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         val activityMap: Map<Long, Activity> = activities.associateBy { it.id }
 
         // Build 24-hour slots, one per hour, all starting null
-        val hourSlots = arrayOfNulls<HourSlot>(24)
+        val hourSlots = arrayOfNulls<HourSlot>(HOURS_IN_DAY)
         selectedDaySchedule.forEach { entry ->
             hourSlots[entry.hourOfDay] = HourSlot(
                 planned = entry.plannedActivityId?.let { activityMap[it] },
@@ -336,11 +345,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
             )
         }
 
-        return (0..3).map { band ->
-            (0..5).map { offset ->
-                hourSlots[clockHourOf((band * 6) + offset, dayStartHour)]
-            }
-        }
+        return bandSlice(hourSlots,dayStartHour)
     }
 
     /* ---------------------------- DEFAULT SCHEDULE DB FUNCTIONS ----------------------------*/

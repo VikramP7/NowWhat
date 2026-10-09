@@ -72,7 +72,9 @@ data class Statistics(
     val nightlySleepAverages: Map<DayOfWeek, SleepAverage?>,
     val nightlyPlannedSleepAverages: Map<DayOfWeek, SleepAverage?>,
 
-    val dayRhythm: List<RhythmColumn>
+    val dayRhythm: List<RhythmColumn>,
+
+    val weeklyShares: List<WeekShare>
 )
 
 fun computeStatistics(
@@ -90,6 +92,14 @@ fun computeStatistics(
 
 
     // -------- APPLY FILTERING --------
+    val cutoff = truncateToHour(now)
+    fun filterEntriesUntilNow(days: List<LocalDate>): List<HourEntry>{
+        val daySet = days.toSet()
+        return entries.filter { // contains logged, blank, and orphaned entries
+            (it.timestamp < cutoff) && (logicalDateOf(it.timestamp, dayStartHour) in daySet)
+        }
+    }
+
     val loggedEntries = entries.filter { entry ->
         entry.actualActivityId != null
     }
@@ -101,20 +111,21 @@ fun computeStatistics(
         firstLoggedDay = firstLoggedDay,
         today = today
     )
-
-    val cutoff = truncateToHour(now)
-    val finishedHoursToday = logicalHourOf(hourOfDay(now), dayStartHour)
     val daySet = filteredDays.toSet()
-    val inRangeEntries = entries.filter { // contains logged, blank, and orphaned entries
-        (it.timestamp < cutoff) && (logicalDateOf(it.timestamp, dayStartHour) in daySet)
-    }
+
+    val finishedHoursToday = logicalHourOf(hourOfDay(now), dayStartHour)
+    val inRangeEntries = filterEntriesUntilNow(filteredDays)
 
     // -------- STATS CARDS (total days/hours) --------
-    val daysTracked = inRangeEntries.filter { activityMap[it.actualActivityId] != null }.distinctBy { logicalDateOf(it.timestamp, dayStartHour) }.size
-
-    val hoursInRange = filteredDays.sumOf { date ->
-        if (date == today) finishedHoursToday else 24
+    // ignores DST changes assumes 24-hour days
+    fun hoursIn(days: List<LocalDate>): Int {
+        return days.sumOf { date ->
+            if (date == today) finishedHoursToday else HOURS_IN_DAY
+        }
     }
+
+    val daysTracked = inRangeEntries.filter { activityMap[it.actualActivityId] != null }.distinctBy { logicalDateOf(it.timestamp, dayStartHour) }.size
+    val hoursInRange = hoursIn(filteredDays)
 
     // -------- DONUT CHART VALUES --------
     val actual = totalsFor(inRangeEntries.map { it.actualActivityId }, activityMap)
@@ -152,28 +163,22 @@ fun computeStatistics(
         today = today
     ).map { it.minusDays(1) }.toSet()
 
-    val sleepEpisodes: List<SleepEpisode> = if (sleepActivity != null){
-        findSleepEpisodes(
-            entries = entries,
-            sleepActivityId = sleepActivity.id,
-            dayStartHour = dayStartHour,
-            windowNightSet = windowNights
-        )
-    }else{
-        emptyList()
+    fun episodesFor(plannedSleep: Boolean): List<SleepEpisode> {
+        return if (sleepActivity != null){
+            findSleepEpisodes(
+                entries = entries,
+                sleepActivityId = sleepActivity.id,
+                dayStartHour = dayStartHour,
+                windowNightSet = windowNights,
+                plannedSleep = plannedSleep
+            )
+        }else{
+            emptyList()
+        }
     }
+    val sleepEpisodes: List<SleepEpisode> = episodesFor(plannedSleep = false)
 
-    val plannedSleepEpisodes: List<SleepEpisode> = if (sleepActivity != null){
-        findSleepEpisodes(
-            entries = entries,
-            sleepActivityId = sleepActivity.id,
-            dayStartHour = dayStartHour,
-            windowNightSet = windowNights,
-            plannedSleep = true
-        )
-    }else{
-        emptyList()
-    }
+    val plannedSleepEpisodes: List<SleepEpisode> = episodesFor(plannedSleep = true)
 
     val filteredSleepAverage = averageSleep(sleepEpisodes.filter { it.nightOf.dayOfWeek in filter.dayType.nightList })
     val filteredPlannedSleepAverage = averageSleep(plannedSleepEpisodes.filter { it.nightOf.dayOfWeek in filter.dayType.nightList })
@@ -182,19 +187,59 @@ fun computeStatistics(
     val sleepDaysOfWeekAverages = DayOfWeek.entries.associateWith { day -> averageSleep(sleepEpisodes.filter { it.nightOf.dayOfWeek == day }) }
     val plannedSleepDaysOfWeekAverages = DayOfWeek.entries.associateWith { day -> averageSleep(plannedSleepEpisodes.filter { it.nightOf.dayOfWeek == day }) }
 
-    // -------- DAY RHYTHM --------
-    val daysBeforeToday = filteredDays.count { it != today }
 
-    val rhythmColumns = List(24) { logicalHour ->
-        val clockHour = clockHourOf(logicalHour,dayStartHour)
-        val col = inRangeEntries.filter { entry -> clockHour == hourOfDay(entry.timestamp) }
-        val sideTotals = totalsFor(col.map { it.actualActivityId }, activityMap)
+    // -------- DAY RHYTHM --------
+    fun partitionOf(ids: List<Long?>, calendarHours: Int): HourPartition {
+        val sideTotals = totalsFor(ids, activityMap)
         val orderedTotals = sideTotals.totals.inOrderOf(activities)
-        RhythmColumn(
-            clockHour = clockHour,
+        return HourPartition(
             totals = orderedTotals,
             orphanedHours = sideTotals.orphanedHours,
-            columnHours = daysBeforeToday + if (logicalHour < finishedHoursToday && today in daySet) 1 else 0
+            calendarHours = calendarHours
+        )
+    }
+
+    val daysBeforeToday = filteredDays.count { it != today }
+
+    val rhythmColumns = List(HOURS_IN_DAY) { logicalHour ->
+        val clockHour = clockHourOf(logicalHour,dayStartHour)
+        val col = inRangeEntries.filter { entry -> clockHour == hourOfDay(entry.timestamp) }
+        val rhythmHourPartition = partitionOf(
+            ids = col.map { it.actualActivityId },
+            calendarHours = daysBeforeToday + if (logicalHour < finishedHoursToday && today in daySet) 1 else 0
+        )
+        RhythmColumn(
+            clockHour = clockHour,
+            partition = rhythmHourPartition
+        )
+    }
+
+    // -------- WEEKLY SHARES TIMELINE --------
+    val timelineDays = daysInRange(
+        filter = filter.copy(window = StatsWindow.ALL),
+        firstLoggedDay = firstLoggedDay,
+        today = today,
+    )
+
+    val timelineEntries = filterEntriesUntilNow(timelineDays)
+
+    val entriesWeekGroups = timelineEntries.groupBy { weekStartOf(logicalDateOf(it.timestamp, dayStartHour)) }
+    val listOfWeeksOfEntries = if (firstLoggedDay == null) emptyList() else {
+        generateSequence(weekStartOf(firstLoggedDay)) { it.plusWeeks(1) }
+        .takeWhile { !it.isAfter(weekStartOf(today))}
+            .associateWith{entriesWeekGroups[it].orEmpty()}
+        .toList()
+    }
+
+    val daysByWeek = timelineDays.groupBy { weekStartOf(it) }
+
+    val weeklyShares = listOfWeeksOfEntries.map { (weekStart, weekEntries) ->
+        WeekShare(
+            weekStart = weekStart,
+            partition = partitionOf(
+                ids = weekEntries.map { it.actualActivityId },
+                calendarHours = hoursIn(daysByWeek[weekStart].orEmpty())
+            )
         )
     }
 
@@ -221,7 +266,8 @@ fun computeStatistics(
         plannedSleepAverage = filteredPlannedSleepAverage,
         nightlySleepAverages = sleepDaysOfWeekAverages,
         nightlyPlannedSleepAverages = plannedSleepDaysOfWeekAverages,
-        dayRhythm = rhythmColumns
+        dayRhythm = rhythmColumns,
+        weeklyShares = weeklyShares,
     )
 }
 
@@ -393,12 +439,23 @@ private fun averageSleep(episodes: List<SleepEpisode>): SleepAverage?{
     return sleepAverage
 }
 
-data class RhythmColumn(
-    val clockHour: Int,              // the real hour this column shows (for 7c's labels)
-    val totals: List<ActivityTotal>, // activities order; only activities with hours here
+// A bucket of hours split the way every chart on the page splits them. calendarHours comes
+// from the calendar, never from the rows, so blankHours is whatever the rows didn't cover.
+data class HourPartition(
+    val totals: List<ActivityTotal>,   // activities order
     val orphanedHours: Int,
-    val columnHours: Int             // from the calendar: how many of this hour fell in range
+    val calendarHours: Int
 ) {
     val loggedHours: Int get() = totals.sumOf { it.hours }
-    val blankHours: Int get() = columnHours - loggedHours - orphanedHours
+    val blankHours: Int get() = calendarHours - loggedHours - orphanedHours
 }
+
+data class RhythmColumn(
+    val clockHour: Int,
+    val partition: HourPartition
+)
+
+data class WeekShare(
+    val weekStart: LocalDate,      // the Monday this bucket starts on (a logical date)
+    val partition: HourPartition
+)

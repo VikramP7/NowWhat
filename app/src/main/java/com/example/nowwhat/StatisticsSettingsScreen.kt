@@ -101,24 +101,32 @@ fun StatisticsSettingsScreen(
 
                 item {
                     Row(
-                        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
                         horizontalArrangement = Arrangement.spacedBy(8.dp))
                     {
                         HeadlineStat(
                             value = "${stats.loggedHours}",
                             label = "Hours Logged",
-                            modifier = Modifier.weight(1f).fillMaxHeight()
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
                         )
                         HeadlineStat(
                             value = "${stats.daysTracked}/${stats.daysInRange}",
                             label = "Days Tracked",
-                            modifier = Modifier.weight(1f).fillMaxHeight()
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
                         )
                         HeadlineStat(
                             value = if (stats.coverage != null)
                                 "${(stats.coverage*100).roundToInt()} %" else "N/A",
                             label = "Coverage",
-                            modifier = Modifier.weight(1f).fillMaxHeight()
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
                         )
                     }
                 }
@@ -231,31 +239,45 @@ fun StatisticsSettingsScreen(
                                 labelColour = TextColour,
                                 is24Hour = is24Hour
                             )
+                            Text(
+                                text = "Each bar is a night, named for the evening it starts",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = TextColour
+                            )
                         }
                     }
                 }
 
                 item {
                     Row(
-                        Modifier.fillMaxWidth().height(IntrinsicSize.Min),
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         HeadlineStat(
                             value = sleepAverage?.let { formatClockLabel(it.bedMinuteOfDay, is24Hour) } ?: "—",
                             label = "Avg Bedtime",
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
                             valueStyle = MaterialTheme.typography.titleLarge
                         )
                         HeadlineStat(
                             value = sleepAverage?.let { formatDurationLabel(it.hours) } ?: "—",
                             label = "Avg Sleep",
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
                             valueStyle = MaterialTheme.typography.titleLarge
                         )
                         HeadlineStat(
                             value = sleepAverage?.let { formatClockLabel(it.wakeMinuteOfDay, is24Hour) } ?: "—",
                             label = "Avg Waketime",
-                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
                             valueStyle = MaterialTheme.typography.titleLarge
                         )
                     }
@@ -276,7 +298,7 @@ fun StatisticsSettingsScreen(
                 }
 
                 // -------- DAY RHYTHM --------
-                val rhythmColumns = stats.dayRhythm.map { stackSlices(it.totals, it.orphanedHours, it.blankHours) }
+                val rhythmColumns = stats.dayRhythm.map { stackSlices(it.partition.totals, it.partition.orphanedHours, it.partition.blankHours) }
                 // Built by the same rule as the stacks, so the legend reads left to right in the
                 // order the columns stack bottom to top.
                 val rhythmLegend = stackSlices(
@@ -287,7 +309,7 @@ fun StatisticsSettingsScreen(
                 // A label every 6 hours, on the same boundaries as the Morning/Day/Evening/Night
                 // rows of the hours view. Index = logical hour, so column 0 is the day start.
                 val rhythmLabels = stats.dayRhythm.mapIndexed { logicalHour, col ->
-                    if (logicalHour % 6 == 0) formatHourLabel(col.clockHour, is24Hour) else null
+                    if (logicalHour % BAND_HOURS == 0) formatHourLabel(col.clockHour, is24Hour) else null
                 }
 
                 item {
@@ -307,6 +329,31 @@ fun StatisticsSettingsScreen(
                                 fontStyle = FontStyle.Italic,
                                 color = TextColour
                             )
+                        }
+                    }
+                }
+
+                // -------- WEEKLY SHARES TIMELINE --------
+                val shareLines = shareSeries(stats.weeklyShares, activities)
+
+                item {
+                    StatsCard(title = "Portion of Time") {
+                        LineChart(series = shareLines)
+                    }
+                }
+                // TEMPORARY
+                item {
+                    StatsCard(title = "Portion of Time (debug)") {
+                        Column {
+                            stats.weeklyShares.forEach { week ->
+                                val p = week.partition
+                                val mix = p.totals.joinToString { "${it.activity.name} ${it.hours}" }
+                                Text(
+                                    text = "${week.weekStart}: $mix · del ${p.orphanedHours} · blank ${p.blankHours}/${p.calendarHours}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = TextColour
+                                )
+                            }
                         }
                     }
                 }
@@ -345,4 +392,26 @@ private fun stackSlices(totals: List<ActivityTotal>, orphanedHours: Int, blankHo
     if (orphanedHours>0) slices.add(ChartSlice("Deleted Activities", OrphanedColour, orphanedHours ))
     if (blankHours>0) slices.add(ChartSlice("Unlogged", UnloggedColour, blankHours ))
     return slices.toList()
+}
+
+private fun shareSeries(weeks: List<WeekShare>, activities: List<Activity>): List<ChartSeries>{
+    val presentActivities: Set<Activity> = emptySet()
+    weeks.forEach { (weekStart, partition) -> partition.totals.forEach { presentActivities.plus(it.activity) } }
+    val valMap = presentActivities.associateWith { mutableListOf<Float?>() }
+    for (week in weeks) {
+        week.partition.totals.forEach { total ->
+            if (week.partition.calendarHours == 0){
+                valMap[total.activity]?.add(null)
+            }else {
+                valMap[total.activity]?.add(total.hours.toFloat()/week.partition.calendarHours.toFloat())
+            }
+        }
+    }
+    return presentActivities.map { activity ->
+        ChartSeries(
+            label = activity.name,
+            colour = Color(activity.colour),
+            values = valMap[activity]?.toList() ?: emptyList()
+        )
+    }
 }

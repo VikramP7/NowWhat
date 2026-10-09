@@ -11,6 +11,8 @@ import kotlin.math.roundToInt
 // so typically the small hours belong to the PREVIOUS logical day.
 
 const val HOUR_MS = 3_600_000L
+const val HOURS_IN_DAY = 24
+const val BAND_HOURS = 6
 
 // instant  ->  which logical day it belongs to (the READ direction: grouping, selection)
 fun logicalDateOf(timestamp: Long, dayStartHour: Int, zone: ZoneId = ZoneId.systemDefault()): LocalDate {
@@ -26,11 +28,7 @@ fun timestampOf(logicalDate: LocalDate, hourOfDay: Int, dayStartHour: Int, zone:
 }
 
 fun partOfLogicalDay(dayOfWeek: Int, hourOfDay: Int, selectedDay:Int, dayStartHour: Int): Boolean{
-    return if (hourOfDay >= dayStartHour){
-        dayOfWeek == selectedDay
-    }else{
-        dayOfWeek == ((selectedDay%7)+1)
-    }
+    return dayOfWeek == scheduleWeekdayFor(hourOfDay, selectedDay, dayStartHour)
 }
 
 // which real weekday a slot belongs to, given the logical day it's displayed under
@@ -52,6 +50,12 @@ fun clockHourOf(logicalHour: Int, dayStartHour: Int): Int{
 
 fun dayOfWeek(timestamp: Long, zone: ZoneId = ZoneId.systemDefault()): Int =
     Instant.ofEpochMilli(timestamp).atZone(zone).dayOfWeek.value
+
+// find the date of the start of the week, where Monday is the start of a week
+fun weekStartOf(date: LocalDate): LocalDate{
+    val daysSinceWeekStarted = date.dayOfWeek.value - 1L
+    return date.minusDays(daysSinceWeekStarted)
+}
 
 val DateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE · MMM d")
 fun formatHourLabel(hour: Int, is24Hour: Boolean): String {
