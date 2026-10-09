@@ -31,8 +31,10 @@ import com.example.nowwhat.ui.theme.OrphanedColour
 import com.example.nowwhat.ui.theme.TextColour
 import com.example.nowwhat.ui.theme.UnloggedColour
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.format.TextStyle as DateTextStyle
 import java.util.Locale
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 @Composable
@@ -333,27 +335,35 @@ fun StatisticsSettingsScreen(
                     }
                 }
 
-                // -------- WEEKLY SHARES TIMELINE --------
+                // -------- PORTION OF TIME --------
+                // All time, whatever the window chip says; only the day-type chip applies here.
                 val shareLines = shareSeries(stats.weeklyShares, activities)
+                val shareLabels = monthLabels(stats.weeklyShares.map { it.weekStart })
+                // Fitted to the largest share any line reaches, Unlogged included, so no line
+                // is ever cut off at the top.
+                val shareScale = shareAxis(shareLines.flatMap { it.values }.filterNotNull().maxOrNull() ?: 0f)
 
                 item {
                     StatsCard(title = "Portion of Time") {
-                        LineChart(series = shareLines)
-                    }
-                }
-                // TEMPORARY
-                item {
-                    StatsCard(title = "Portion of Time (debug)") {
-                        Column {
-                            stats.weeklyShares.forEach { week ->
-                                val p = week.partition
-                                val mix = p.totals.joinToString { "${it.activity.name} ${it.hours}" }
-                                Text(
-                                    text = "${week.weekStart}: $mix · del ${p.orphanedHours} · blank ${p.blankHours}/${p.calendarHours}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = TextColour
-                                )
-                            }
+                        // No lines means no week had any hours yet (nothing logged, or a day-type
+                        // filter whose days haven't come round since the first log).
+                        if (shareLines.isEmpty()) {
+                            Text("No hours to show yet", color = TextColour)
+                        } else {
+                            LineChart(
+                                series = shareLines,
+                                labelColour = TextColour,
+                                xLabels = shareLabels,
+                                gridLines = shareScale.gridLines,
+                                yMax = shareScale.top
+                            )
+                            SwatchLegend(entries = shareLines.map { it.label to it.colour })
+                            Text(
+                                text = shareCaption(filter.dayType),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = TextColour
+                            )
                         }
                     }
                 }
@@ -368,8 +378,7 @@ private fun sleepCaption(nights: Int?, dayType: DayType): String {
     if (nights == null) return "No complete nights in this range"
 
     val nightWord = if (nights == 1) "night" else "nights"
-    val whichNights = if (dayType == DayType.ALL) "" else " · " + shortDayNames(dayType.nightList)
-    return "Averaged over $nights $nightWord$whichNights"
+    return "Averaged over $nights $nightWord${dayNamesSuffix(dayType, dayType.nightList)}"
 }
 
 // The caption under the day rhythm. It names the *days* (dayList), where sleepCaption names the
@@ -377,13 +386,61 @@ private fun sleepCaption(nights: Int?, dayType: DayType): String {
 // which is what stops the two from looking like they disagree.
 private fun rhythmCaption(days: Int, dayType: DayType): String {
     val dayWord = if (days == 1) "day" else "days"
-    val whichDays = if (dayType == DayType.ALL) "" else " · " + shortDayNames(dayType.dayList)
-    return "Each column is one hour of the day, across $days $dayWord$whichDays"
+    return "Each column is one hour of the day, across $days $dayWord${dayNamesSuffix(dayType, dayType.dayList)}"
 }
 
-// "Fri, Sat" — the one home for how both captions spell out a list of weekdays.
-private fun shortDayNames(days: List<DayOfWeek>): String =
-    days.joinToString(", ") { it.getDisplayName(DateTextStyle.SHORT, Locale.getDefault()) }
+// The caption under portion of time. "Since your first log" is the part that matters: this
+// chart ignores the window chips, and without saying so it looks broken when they don't move it.
+private fun shareCaption(dayType: DayType): String =
+    "Each week's share of its hours, since your first log${dayNamesSuffix(dayType, dayType.dayList)}"
+
+// " · Fri, Sat", or nothing under All days. The one home for how every caption names the
+// days it covers; each caption passes the list it was filtered by (days, or nights for sleep).
+private fun dayNamesSuffix(dayType: DayType, days: List<DayOfWeek>): String =
+    if (dayType == DayType.ALL) ""
+    else " · " + days.joinToString(", ") { it.getDisplayName(DateTextStyle.SHORT, Locale.getDefault()) }
+
+// The y range for a chart of shares, fitted to the data: the top of the plot, and the
+// gridlines from 0 up to it. The top is the first "nice" step at or above the largest value,
+// with steps chosen so there are at most MAX_GRID_DIVISIONS gaps between gridlines.
+internal data class ShareAxis(
+    val top: Float,
+    val gridLines: List<Pair<Float, String>>
+)
+
+private val NICE_PERCENT_STEPS = listOf(5, 10, 20, 25, 50)
+private const val MAX_GRID_DIVISIONS = 5
+
+internal fun shareAxis(maxShare: Float): ShareAxis {
+    // Whole percents, so the step arithmetic is exact. The 0.01 nudge is for float error:
+    // 0.3f × 100 is 30.000002, and without it a share of exactly 30% would round up to 31
+    // and push the top a whole step higher.
+    val maxPercent = ceil(maxShare * 100 - 0.01f).toInt().coerceIn(1, 100)
+
+    // (a + b - 1) / b is integer division rounding up: how many steps it takes to reach the max.
+    fun stepsToReach(step: Int) = (maxPercent + step - 1) / step
+
+    val step = NICE_PERCENT_STEPS.first { stepsToReach(it) <= MAX_GRID_DIVISIONS }
+    val divisions = stepsToReach(step)
+    return ShareAxis(
+        top = step * divisions / 100f,
+        gridLines = (0..divisions).map { i -> i * step / 100f to "${i * step}%" }
+    )
+}
+
+// A label under the first week that starts in each month: the month's short name, plus the
+// year on the very first label and on every January, so a long history can still be placed.
+// Null for every other week. The chart skips any label that would collide, so this doesn't
+// need to know how wide the screen is.
+private fun monthLabels(weekStarts: List<LocalDate>): List<String?> =
+    weekStarts.mapIndexed { index, start ->
+        val previous = weekStarts.getOrNull(index - 1)
+        if (previous != null && previous.month == start.month) null
+        else {
+            val month = start.month.getDisplayName(DateTextStyle.SHORT, Locale.getDefault())
+            if (previous == null || start.monthValue == 1) "$month ${start.year}" else month
+        }
+    }
 
 // The two kinds of hour that aren't an activity. One home for their names, because every
 // chart that shows them (donut, rhythm, portion of time) has to call them the same thing.

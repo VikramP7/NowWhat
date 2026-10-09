@@ -1,4 +1,4 @@
-*<div align="right"> Vikram Procter | September 11, 2026 </div>*
+*<div align="right"> Vikram Procter | October 8, 2026 </div>*
 
 # NowWhat? - README
 
@@ -41,7 +41,7 @@ The main screen, top to bottom:
 - **Entry panel** (pinned to bottom): shows the currently selected time slot with a clock icon. Displays preset buttons in two rows: outlined "What's planned?" buttons and filled "What's happened?" buttons. Both rows include an "Edit+" button that navigates to Settings. The "What's happened?" buttons are disabled for hours in the future. Includes a **colour legend** mapping each colour to its activity. The right edge of the button rows fades to avoid a hard scroll cutoff.
 
 The **settings screen** is a scrollable list of setting rows, each a rounded rectangle with either a chevron (opens a sub-screen), a toggle, or a number stepper:
-- **See Statistics** → metrics screen (placeholder; see TODO)
+- **See Statistics** → the statistics screen: charts of where your hours go (see "Statistics" below)
 - **Edit Notes** → browse and edit every daily synopsis
 - **Edit Activities** → activity management screen
 - **Edit Default Schedule** → weekly schedule editor
@@ -54,6 +54,8 @@ The **settings screen** is a scrollable list of setting rows, each a rounded rec
 The **activities editor** shows an editable list of activities styled as settings-style cards. Each card has a tappable colour swatch (revealing a palette to pick from), an inline text field for renaming, and a delete button, plus an "Add" button at the bottom. The list scrolls clear of the keyboard when a name field is focused.
 
 The **default schedule editor** lets you define a recurring weekly plan. A row of seven day-chips (Mo–Su) selects which weekday you're editing; below it a grid identical to the main hours view shows that weekday's planned activities. Tap an hour box to select it, then tap a preset to set (or Clear to remove) the planned activity for that slot. The header shows the selected hour and which weekday it belongs to.
+
+The **statistics screen** is a scrolling page of chart cards under two rows of filter chips; "Statistics" below describes each chart and the rules behind the numbers.
 
 The **notes screen** lists every daily synopsis newest-first as a card showing the day's date above a three-line preview of the text. Tapping a card opens the same editing dialog the main screen uses. When there are no notes yet, the list shows a short prompt pointing at the note icon on the hours view.
 
@@ -100,6 +102,25 @@ Three deliberate choices about how it interacts with the hourly notification:
 
 Both notifications appear together if the reminder hour coincides with an hourly prompt. That is intended: they ask different questions, and each dismisses independently.
 
+### Statistics
+
+The statistics screen turns the hour log into charts. Two rows of filter chips at the top choose a **time window** (week, month, quarter, all) and a **day type** (all days, weekdays, weekends). The two are independent, so "weekends over the last quarter" works. Below them, top to bottom:
+
+- **Headline cards:** hours logged, days tracked, and coverage (the share of hours in range that have a log).
+- **Activity donut:** total hours and percentage per activity, with deleted-activity and unlogged hours as their own slices so the ring accounts for every hour.
+- **Plan vs actual:** a matrix with planned activities as rows and what actually happened as columns, shown as percentages of each plan or as raw hours, with an adherence headline (of the hours that had both a plan and a log, the share that matched).
+- **Sleep:** choose which activity means sleep, then a floating bar for each night of the week running from average bedtime to average waketime, with planned sleep as faint ghost bars and dashed lines for the actual and planned averages. Three cards give the average bedtime, sleep duration and waketime.
+- **Day rhythm:** 24 stacked columns, one per hour of the day, each showing what that hour usually holds. The first column is the day-start hour.
+- **Portion of time:** one line per activity showing each week's share of its hours, since the first log, on a scale fitted to the data.
+
+A few rules keep the numbers honest:
+
+- **Denominators come from the calendar, not the log.** An hour that was never logged still counts as an hour, so unlogged time shows up (grey in the donut, the rhythm columns, and its own line) rather than letting a thinly logged week look like a confident picture. Today counts only its finished hours.
+- **Hours follow the logical day.** A night belongs to the evening it starts, so "Weekends" on the sleep chart means Friday and Saturday nights. Captions name the days or nights a figure covers.
+- **Filters apply where they make sense.** The sleep bars ignore day type, since their x-axis already is the day of the week. Portion of time ignores the window, since it's a history, but follows day type.
+
+All the arithmetic lives in `Statistics.kt`, a pure function of the log with no Android imports, which is what makes it testable on the JVM (see "Testing"). The charts are drawn by hand on Compose `Canvas` rather than with a charting library: a donut, a floating bar chart, stacked columns and a line chart, plus the matrix as an ordinary Compose layout. Each chart is generic: it takes plain slices, series and labels, and the screen decides what they mean.
+
 ### Theming and dark mode
 
 The app follows the system light/dark setting. Rather than routing every screen through `MaterialTheme.colorScheme`, the handful of UI "chrome" colours (background, text, card fill, borders, cancel grey, danger red) are exposed from `Color.kt` as composable accessors: each name resolves to a light or dark value based on `isSystemInDarkTheme()`, backed by an explicit light/dark value pair. Because the accessors keep the same names the UI already used, no call sites had to change. The one caveat this introduces: a composable accessor can only be read from a composable context, so any use inside a non-composable draw scope (the gradient fades in `HoursView` and `EntryPanel`) first reads the colour into a local `val`. The activity palette is deliberately *not* themed: those colours are stored per-activity in the database as ARGB ints and are read from non-composable code, so they stay plain values and look identical in both themes.
@@ -119,6 +140,8 @@ The **Export/Import** screen lets you back up everything to a single JSON file a
 - **AlarmManager** (exact alarms) + **BroadcastReceiver**s for the self-rescheduling on-the-hour notification engine, including `RemoteInput` inline reply
 - **Storage Access Framework** (`ActivityResultContracts.CreateDocument`/`OpenDocument`) + `ContentResolver` for user-driven file export/import; **`org.json`** for backup serialization
 - **Material Design 3** with a custom, system-following light/dark colour theme and vector drawable icons
+- **Compose `Canvas`** for hand-drawn statistics charts (no charting library)
+- **JUnit 4** local unit tests on the JVM for the statistics arithmetic
 - Built in Android Studio; tested on a physical device over wireless ADB
 
 ## Architecture
@@ -126,6 +149,8 @@ The **Export/Import** screen lets you back up everything to a single JSON file a
 Data flows in one direction: **Entity → DAO → Database → ViewModel → Composable** (with DataStore as a parallel source for settings). Reads are exposed as reactive `Flow`s and `StateFlow`s, so the UI updates itself whenever the data changes. Events flow upward via callback lambdas (state hoisting).
 
 The **notification engine is a second entry point into the data layer**, living outside the ViewModel/Compose lifecycle: `AlarmReceiver`, `NotificationActionReceiver`, `NoteReplyReceiver`, and `BootReceiver` reach Room and DataStore directly via `AppDatabase.getDatabase(context)` / `SettingsStore(context)` (reading with `runBlocking { flow.first() }`, which is acceptable for these short-lived, local-file reads). `AlarmReceiver` also drives the day-change seed each hour through the shared `seedDayFromSchedule` in `Seeding.kt`, the same function the ViewModel calls on launch. `NotificationHelper` (a stateless `object`) owns channel creation, notification building, and alarm scheduling. Where a rule must hold in both worlds, it is extracted into a plain top-level `suspend fun` that takes its DAO as a parameter, `Seeding.kt` for day seeding, `Notes.kt` for saving a synopsis (trim, and delete rather than store blank) — so the ViewModel and the receivers share one implementation instead of two copies. See the Notifications section above for the flow.
+
+Statistics are a pure function of the data. The ViewModel `combine`s entries, activities, the day-start hour, the filter and the chosen sleep activity, runs `computeStatistics` off the main thread (`flowOn(Dispatchers.Default)`), and exposes the result as a `StateFlow<Statistics?>`. The screen maps it into generic chart types (`ChartSlice`, `ChartSeries`) at the UI boundary, which is also where colours are attached; `Statistics.kt` itself never touches Compose.
 
 Navigation uses a simple state-based approach: an `AppScreenState` enum (`MAIN`, `SETTINGS`, `SETTINGS_STATISTICS`, `SETTINGS_NOTES`, `SETTINGS_ACTIVITIES`, `SETTINGS_DEFAULTSCHEDULE`, `SETTINGS_NOTIFICATIONS`, `SETTINGS_DATA`, `SETTINGS_DANGERZONE`) held in `MainActivity`, with a `when` expression swapping between screens. Sub-screens navigate back to `SETTINGS`; the settings list navigates back to `MAIN`. The Android system back button mirrors this: a single `BackHandler` uses an `AppScreenState.parent()` mapping to step up the tree, and on `MAIN` (which has no parent) it disables itself so the press falls through to the OS and the app closes normally. Every screen receives the shared `ViewModel` instance and an `onNavigate` callback.
 
@@ -147,7 +172,15 @@ UI component tree:
     - `ActivitiesSettingsScreen`: self-contained (no separate child composable). Renders each activity as a `SettingRow` with the colour swatch in `leading`, an inline-rename `BasicTextField` in `content`, and a delete action trailing; keyboard-aware via `imePadding`
     - `DefaultScheduleSettingsScreen` → `WeekdayPicker` + `DaySection` + preset row (passes no `noteButton`, so the schedule grid has no note icon)
     - `NotesSettingsScreen` (wired: `LazyColumn` of `NoteCard`s, tap to open `NoteDialog`)
-    - `StatisticsSettingsScreen` (placeholder; scaffolding only)
+    - `StatisticsSettingsScreen`: a `LazyColumn` of chart cards
+      - `StatsChipRow`: generic chip row for the window and day-type filters
+      - `StatsCard`: the card shell every chart sits in; `HeadlineStat`: a card with one big number
+      - `DonutChart` + `DonutLegend`: the activity donut
+      - `ActivityMatrixGrid` + `ActivityLegend`: the plan-vs-actual matrix
+      - `SleepBarChart`: floating sleep bars with planned ghost bars and dashed averages
+      - `StackedColumnChart`: the day rhythm
+      - `LineChart`: portion of time
+      - `SwatchLegend`: colour → name key for anything, activity or not (`ActivityLegend` is built on it)
     - `NotificationsSettingsScreen` (wired: master switch, DND window, synopsis reminder switch + hour)
     - `DataSettingsScreen` (wired: JSON export/import via SAF file pickers, with an import confirmation)
     - `DangerZoneSettingsScreen` (wired: destructive actions, each behind a `ConfirmDialog`)
@@ -171,12 +204,18 @@ The destructive fallback is now **narrowed** to `fallbackToDestructiveMigrationF
 
 Scalar settings (DataStore, not Room):
 
-- `is_24_hour` (Boolean), `day_start_hour` (Int), `lastSeededDay` (Long, epoch-day marker), `notifications_enabled` (Boolean, default true), `dnd_start_hour` (Int, default 22), `dnd_end_hour` (Int, default 7), `note_notifications_enabled` (Boolean, default true), `note_notification_hour` (Int, default 21).
+- `is_24_hour` (Boolean), `day_start_hour` (Int), `lastSeededDay` (Long, epoch-day marker), `notifications_enabled` (Boolean, default true), `dnd_start_hour` (Int, default 22), `dnd_end_hour` (Int, default 7), `note_notifications_enabled` (Boolean, default true), `note_notification_hour` (Int, default 21), `sleep_activity_id` (Long, unset until a sleep activity is chosen on the statistics screen).
 
 Supporting UI classes (not persisted):
 
 - **HourSlot**: holds a planned and an actual `Activity?`, used to pass data to `HourBox`.
 - **Day**: holds a date string, a `LocalDate`, that day's synopsis text (`note: String?`), and four lists of `HourSlot?` (one per time band), used for the main hours view. The schedule editor uses bare `List<List<HourSlot?>>` rows rather than a `Day`, since a template has no calendar date.
+- **Statistics**: the computed result for the current filters (totals, the matrix, sleep averages, the day rhythm and the weekly shares), built fresh from the database by `computeStatistics`. Its buckets share one shape, `HourPartition`: hours per activity, deleted-activity hours, and the calendar hours they're out of, so unlogged hours are whatever's left.
+- **ChartSlice** / **ChartSeries**: plain label + colour + value(s) types the charts draw from; the screen builds them from `Statistics`.
+
+## Testing
+
+The statistics arithmetic has local unit tests that run on the computer's JVM rather than on a phone, so they finish in seconds: `SleepStatisticsTest` (sleep episodes and averages) and the day-rhythm tests alongside it, `WeeklySharesTest` (the weekly buckets behind portion of time), `ShareSeriesTest` (turning those buckets into chart lines) and `ShareAxisTest` (fitting the line chart's scale). They live in `app/src/test/java/com/example/nowwhat/`. Run them from the green ▶ beside a test in Android Studio, or with `./gradlew :app:testDebugUnitTest`. Running a test under **Debug** is also the quickest way to step through the statistics code, since nothing has to be installed.
 
 ## Status
 
@@ -212,6 +251,9 @@ Done:
 - **Daily synopsis notes**: `Note` + `NoteDao` keyed by logical day (`@Upsert`, natural primary key), the app's **first real schema migration** (v3 → v4 via `@AutoMigration`, verified data-preserving on device), notes added to the JSON backup (`BACKUP_VERSION` 2, backwards-compatible import of v1 files), note button per day in the hours view (filled/outlined), a shared `NoteDialog` reached from both the hours view and the Notes settings screen, note-only days rendering as empty grids, and a Danger Zone "delete all notes" action
 - **Destructive-migration fallback narrowed** to versions 1–2 only, so missing migrations now crash loudly instead of wiping data
 - **Hour formatting unified**: `DefaultScheduleSettingsScreen`'s header and `EntryPanel`'s time range now route through `formatHourLabel` (previously raw `"$h:00"` and a `DateTimeFormatter` `"h:mm a"` pattern, which ignored / diverged from the 12/24-hour setting); the shared `DateFormatter` in `DayBoundry.kt` is now the one home for the day-label date pattern
+- **Statistics screen** (in progress): filter chips, headline cards, activity donut, plan-vs-actual matrix with adherence, sleep section (picker, floating bar chart with planned ghost bars and dashed averages, headline cards), day-rhythm stacked columns, and the portion-of-time line chart with a fitted scale; all charts hand-drawn on `Canvas`, all arithmetic in the pure `Statistics.kt`
+- **Unit tests**: JVM tests for sleep, the day rhythm, the weekly shares, the chart-line mapping and the axis fitting
+- **Day-structure helpers** in `DayBoundry.kt` (`logicalHourOf`/`clockHourOf`, `weekStartOf`, `HOURS_IN_DAY`/`BAND_HOURS`), replacing open-coded hour arithmetic across the hours view, schedule editor and statistics
 - App runs on physical device over wireless ADB
 
 ## TODO
@@ -239,19 +281,17 @@ Done:
 - [x] Enable Room schema export and commit the v3 baseline (migration-readiness)
 - [x] Write a real `@AutoMigration` (v3 → v4 for the `notes` table) and narrow the destructive fallback to versions 1–2
 - [x] Unify hour/time formatting onto `formatHourLabel`; share one `DateFormatter` for day labels
-- [ ] Add metrics page in settings to show analysis of how time is spent.
-  - **Filter Chips:** Two rows, filter by time period (week, month, quarter, all), and by day type (all days, weekdays, weekends).
-  - **Headline Stat Cards:** Total Hours logged, Days tracked fraction, Coverage
-  - **Donut Chart:** Total hours (and percentage) spent on each activity
-  - **Planned vs. Actual Confusion Matrix:** Also shows the plan adherance percentage (responsive to the filter chips) 
-  - **Sleep Headline Stats:** Average bedtime, average hours slept, average wakeup time (responsive to both filter)
-  - **Sleep Bar Chart:** Floating bars, x-axis is night off day of week, normalized top of bar is bedtime, length is sleep time and bottom is waketime the next day. Dotted lines showing timespans average or planned average if feeling like more math. (Only responsive to time period filter, x-axis already does type of day)
-  - **Day Rythm:** 24 Stacked Columns, x-axis one per hour of day, each normalized to the full height, segments coloured based on activity portion. Eg. first column is 6am, 70% of the blocks in the col are sleep and 30% are gym. Follows both filters 
-  - **Portion of Time Line Graph:** Time on x-axis, percentage of time on y-axis.Each activity gets a line. Obeys day type filter, all ways all time. 
-  - **Aspiration Gap:** Per activity, two bars: hours planned vs hours logged (potentially normalized). Follows both filters.
-  - **Transition Matrix:** Similar in structure to Planned vs. Actual, but compares rows are `actual[t]` to cols of `actual[t+1]`. "After Gym you most often do Work."
-  - **Coverage Heatmap:** Github style coverage heatmap, NO STREAKS, to many apps have streaks now a days.
-  - **Random In Between Card Ideas:** Longest recorded sleep, most common first activity of the day, days with synopsis written.
+- [ ] Add metrics page in settings to show analysis of how time is spent. *(In progress: everything below except the last two is built.)*
+  - [x] **Filter Chips:** Two rows, filter by time period (week, month, quarter, all), and by day type (all days, weekdays, weekends).
+  - [x] **Headline Stat Cards:** Total Hours logged, Days tracked fraction, Coverage
+  - [x] **Donut Chart:** Total hours (and percentage) spent on each activity
+  - [x] **Planned vs. Actual Confusion Matrix:** Also shows the plan adherence percentage (responsive to the filter chips)
+  - [x] **Sleep Headline Stats:** Average bedtime, average hours slept, average wakeup time (responsive to both filters)
+  - [x] **Sleep Bar Chart:** Floating bars, x-axis is the night of each day of the week, top of bar is bedtime, length is sleep time and bottom is waketime the next day. Dashed lines show the average and the planned average. (Only responsive to the time period filter; the x-axis already covers type of day)
+  - [x] **Day Rhythm:** 24 Stacked Columns, x-axis one per hour of day, each normalized to the full height, segments coloured based on activity portion. Eg. first column is 6am, 70% of the blocks in the col are sleep and 30% are gym. Follows both filters
+  - [x] **Portion of Time Line Graph:** Time on x-axis, percentage of time on y-axis. Each activity gets a line. Obeys day type filter, always all time.
+  - [ ] **Aspiration Gap:** Per activity, two bars: hours planned vs hours logged (potentially normalized). Follows both filters.
+  - [ ] **Transition Matrix:** Similar in structure to Planned vs. Actual, but compares rows are `actual[t]` to cols of `actual[t+1]`. "After Gym you most often do Work."
   Daily/weekly patterns/changes; Weekday vs. weekend differences; Sleep duration and consistency; Hours that weren't logged
 - [x] Daily Synopsis: a `notes` table holding one short diary-style entry per logical day, with the schema migration, backup support, and the editing UI (day-header button + Notes settings screen)
 - [x] Daily Synopsis **notification**: a prompt to write the day's synopsis, with its own enable/disable toggle, a configurable time-of-day, and inline reply from the shade
