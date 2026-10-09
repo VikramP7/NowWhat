@@ -385,33 +385,49 @@ private fun rhythmCaption(days: Int, dayType: DayType): String {
 private fun shortDayNames(days: List<DayOfWeek>): String =
     days.joinToString(", ") { it.getDisplayName(DateTextStyle.SHORT, Locale.getDefault()) }
 
+// The two kinds of hour that aren't an activity. One home for their names, because every
+// chart that shows them (donut, rhythm, portion of time) has to call them the same thing.
+private const val DELETED_LABEL = "Deleted Activities"
+private const val UNLOGGED_LABEL = "Unlogged"
+
 private fun stackSlices(totals: List<ActivityTotal>, orphanedHours: Int, blankHours: Int): List<ChartSlice>{
     val slices: MutableList<ChartSlice> =
         totals.map {ChartSlice(it.activity.name, Color(it.activity.colour), it.hours)
         }.toMutableList()
-    if (orphanedHours>0) slices.add(ChartSlice("Deleted Activities", OrphanedColour, orphanedHours ))
-    if (blankHours>0) slices.add(ChartSlice("Unlogged", UnloggedColour, blankHours ))
+    if (orphanedHours>0) slices.add(ChartSlice(DELETED_LABEL, OrphanedColour, orphanedHours ))
+    if (blankHours>0) slices.add(ChartSlice(UNLOGGED_LABEL, UnloggedColour, blankHours ))
     return slices.toList()
 }
 
-private fun shareSeries(weeks: List<WeekShare>, activities: List<Activity>): List<ChartSeries>{
-    val presentActivities: Set<Activity> = emptySet()
-    weeks.forEach { (weekStart, partition) -> partition.totals.forEach { presentActivities.plus(it.activity) } }
-    val valMap = presentActivities.associateWith { mutableListOf<Float?>() }
-    for (week in weeks) {
-        week.partition.totals.forEach { total ->
-            if (week.partition.calendarHours == 0){
-                valMap[total.activity]?.add(null)
-            }else {
-                valMap[total.activity]?.add(total.hours.toFloat()/week.partition.calendarHours.toFloat())
-            }
+// One line per kind of hour, one value per week. Every line is built by mapping over ALL the
+// weeks, so each has exactly weeks.size values and index i is always week i, whatever the
+// data contains. (internal rather than private so ShareSeriesTest can reach it.)
+internal fun shareSeries(weeks: List<WeekShare>, activities: List<Activity>): List<ChartSeries> {
+
+    // A week's share of some hours: those hours ÷ that week's own calendar hours.
+    // Null when the week had no hours to share out, so the chart breaks the line there.
+    fun line(label: String, colour: Color, hoursIn: (HourPartition) -> Int) = ChartSeries(
+        label = label,
+        colour = colour,
+        values = weeks.map { week ->
+            val p = week.partition
+            if (p.calendarHours == 0) null else hoursIn(p).toFloat() / p.calendarHours
         }
+    )
+
+    // Activities with hours in any week, in the activities-table order.
+    val present = activities.filter { activity ->
+        weeks.any { week -> week.partition.totals.any { it.activity.id == activity.id } }
     }
-    return presentActivities.map { activity ->
-        ChartSeries(
-            label = activity.name,
-            colour = Color(activity.colour),
-            values = valMap[activity]?.toList() ?: emptyList()
-        )
+
+    return buildList {
+        present.forEach { activity ->
+            // An activity missing from a week that had hours is a real 0%, not a gap.
+            add(line(activity.name, Color(activity.colour)) { p ->
+                p.totals.find { it.activity.id == activity.id }?.hours ?: 0
+            })
+        }
+        if (weeks.any { it.partition.orphanedHours > 0 }) add(line(DELETED_LABEL, OrphanedColour) { it.orphanedHours })
+        if (weeks.any { it.partition.blankHours > 0 }) add(line(UNLOGGED_LABEL, UnloggedColour) { it.blankHours })
     }
 }
