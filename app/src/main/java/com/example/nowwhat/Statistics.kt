@@ -5,8 +5,8 @@ import java.time.LocalDate
 import kotlin.math.roundToInt
 
 
-private const val SLEEP_MAX_BRIDGE_HOURS = 1 // max sleep missing sleep hours to assume same sleep episode
-private const val SLEEP_MIN_EPISODE_HOURS = 3// min number of hours required to count as a sleep episode
+private const val SLEEP_MAX_BRIDGE_HOURS = 1 // max missing sleep hours to assume same sleep episode
+private const val SLEEP_MIN_EPISODE_HOURS = 3 // min number of hours required to count as a sleep episode
 private const val SLEEP_PIVOT_HOUR = 12 // the point bedtimes are averaged from (assuming nobody sleeps across midday, and a night-shift user would want a midnight pivot)
 
 enum class StatsWindow(val days: Int?) {
@@ -74,7 +74,9 @@ data class Statistics(
 
     val dayRhythm: List<RhythmColumn>,
 
-    val weeklyShares: List<WeekShare>
+    val weeklyShares: List<WeekShare>,
+
+    val aspirationGap: List<ActivityGap>
 )
 
 fun computeStatistics(
@@ -133,7 +135,7 @@ fun computeStatistics(
 
     val blankLogHours = hoursInRange-(actual.enteredHours+actual.orphanedHours)
     val blankPlanHours = hoursInRange-(planned.enteredHours+planned.orphanedHours)
-    val coverage = if (hoursInRange.toFloat() > 0) actual.enteredHours.toFloat()/hoursInRange.toFloat() else null
+    val coverage = if (hoursInRange > 0) actual.enteredHours.toFloat()/hoursInRange.toFloat() else null
 
     // -------- PLAN VS ACTUAL CONFUSION MATRIX --------
     val planVsActualPairs = inRangeEntries.mapNotNull { entry ->
@@ -243,6 +245,12 @@ fun computeStatistics(
         )
     }
 
+    // -------- ASPIRATION GAP --------
+    val aspirationGap = aspirationGap(
+        planned = planned.totals,
+        actual = actual.totals,
+        activities = activities
+    )
 
     return Statistics(
         loggedHours = actual.enteredHours,
@@ -268,6 +276,7 @@ fun computeStatistics(
         nightlyPlannedSleepAverages = plannedSleepDaysOfWeekAverages,
         dayRhythm = rhythmColumns,
         weeklyShares = weeklyShares,
+        aspirationGap = aspirationGap
     )
 }
 
@@ -459,3 +468,25 @@ data class WeekShare(
     val weekStart: LocalDate,      // the Monday this bucket starts on (a logical date)
     val partition: HourPartition
 )
+
+data class ActivityGap(
+    val activity: Activity,
+    val plannedHours: Int,
+    val actualHours: Int
+)
+
+private fun aspirationGap(
+    planned: List<ActivityTotal>,
+    actual: List<ActivityTotal>,
+    activities: List<Activity>
+): List<ActivityGap>{
+    val plannedById = planned.associateBy { it.activity.id }
+    val actualById = actual.associateBy { it.activity.id }
+    return activities.mapNotNull { activity ->
+        val plannedHours = plannedById[activity.id]?.hours
+        val actualHours = actualById[activity.id]?.hours
+        if (plannedHours == null && actualHours == null) null
+        else ActivityGap(activity, plannedHours ?: 0, actualHours ?: 0)
+    }
+}
+

@@ -112,6 +112,7 @@ The statistics screen turns the hour log into charts. Two rows of filter chips a
 - **Sleep:** choose which activity means sleep, then a floating bar for each night of the week running from average bedtime to average waketime, with planned sleep as faint ghost bars and dashed lines for the actual and planned averages. Three cards give the average bedtime, sleep duration and waketime.
 - **Day rhythm:** 24 stacked columns, one per hour of the day, each showing what that hour usually holds. The first column is the day-start hour.
 - **Portion of time:** one line per activity showing each week's share of its hours, since the first log, on a scale fitted to the data.
+- **Aspiration gap:** one row per activity, comparing the hours planned for it with the hours actually spent on it. The planned hours are a wide, faint bar and the actual hours a narrow, solid bar on top, so a solid bar that stops short of its faint one means less than planned and one that runs past it means more. A toggle switches between raw hours (every row on one scale) and actual as a percentage of planned (each row scaled to its own longer bar). It shares that toggle with the plan-vs-actual matrix, since both mean the same thing by "% of plan".
 
 A few rules keep the numbers honest:
 
@@ -119,7 +120,7 @@ A few rules keep the numbers honest:
 - **Hours follow the logical day.** A night belongs to the evening it starts, so "Weekends" on the sleep chart means Friday and Saturday nights. Captions name the days or nights a figure covers.
 - **Filters apply where they make sense.** The sleep bars ignore day type, since their x-axis already is the day of the week. Portion of time ignores the window, since it's a history, but follows day type.
 
-All the arithmetic lives in `Statistics.kt`, a pure function of the log with no Android imports, which is what makes it testable on the JVM (see "Testing"). The charts are drawn by hand on Compose `Canvas` rather than with a charting library: a donut, a floating bar chart, stacked columns and a line chart, plus the matrix as an ordinary Compose layout. Each chart is generic: it takes plain slices, series and labels, and the screen decides what they mean.
+All the arithmetic lives in `Statistics.kt`, a pure function of the log with no Android imports, which is what makes it testable on the JVM (see "Testing"). The charts are drawn by hand on Compose `Canvas` rather than with a charting library: a donut, a floating bar chart, stacked columns and a line chart, plus the matrix and the aspiration gap's paired bars as ordinary Compose layouts, since every cell or row in them holds text. Each chart is generic: it takes plain slices, series and labels, and the screen decides what they mean.
 
 ### Theming and dark mode
 
@@ -180,6 +181,7 @@ UI component tree:
       - `SleepBarChart`: floating sleep bars with planned ghost bars and dashed averages
       - `StackedColumnChart`: the day rhythm
       - `LineChart`: portion of time
+      - `PairedBarChart` + `PairedBarKey`: the aspiration gap (faint bar behind, solid bar in front, on one shared scale) and its planned/actual key
       - `SwatchLegend`: colour → name key for anything, activity or not (`ActivityLegend` is built on it)
     - `NotificationsSettingsScreen` (wired: master switch, DND window, synopsis reminder switch + hour)
     - `DataSettingsScreen` (wired: JSON export/import via SAF file pickers, with an import confirmation)
@@ -210,8 +212,8 @@ Supporting UI classes (not persisted):
 
 - **HourSlot**: holds a planned and an actual `Activity?`, used to pass data to `HourBox`.
 - **Day**: holds a date string, a `LocalDate`, that day's synopsis text (`note: String?`), and four lists of `HourSlot?` (one per time band), used for the main hours view. The schedule editor uses bare `List<List<HourSlot?>>` rows rather than a `Day`, since a template has no calendar date.
-- **Statistics**: the computed result for the current filters (totals, the matrix, sleep averages, the day rhythm and the weekly shares), built fresh from the database by `computeStatistics`. Its buckets share one shape, `HourPartition`: hours per activity, deleted-activity hours, and the calendar hours they're out of, so unlogged hours are whatever's left.
-- **ChartSlice** / **ChartSeries**: plain label + colour + value(s) types the charts draw from; the screen builds them from `Statistics`.
+- **Statistics**: the computed result for the current filters (totals, the matrix, sleep averages, the day rhythm, the weekly shares and the aspiration gap), built fresh from the database by `computeStatistics`. Its buckets share one shape, `HourPartition`: hours per activity, deleted-activity hours, and the calendar hours they're out of, so unlogged hours are whatever's left.
+- **ChartSlice** / **ChartSeries** / **PairedBar**: plain label + colour + value(s) types the charts draw from; the screen builds them from `Statistics`.
 
 ## Testing
 
@@ -251,7 +253,7 @@ Done:
 - **Daily synopsis notes**: `Note` + `NoteDao` keyed by logical day (`@Upsert`, natural primary key), the app's **first real schema migration** (v3 → v4 via `@AutoMigration`, verified data-preserving on device), notes added to the JSON backup (`BACKUP_VERSION` 2, backwards-compatible import of v1 files), note button per day in the hours view (filled/outlined), a shared `NoteDialog` reached from both the hours view and the Notes settings screen, note-only days rendering as empty grids, and a Danger Zone "delete all notes" action
 - **Destructive-migration fallback narrowed** to versions 1–2 only, so missing migrations now crash loudly instead of wiping data
 - **Hour formatting unified**: `DefaultScheduleSettingsScreen`'s header and `EntryPanel`'s time range now route through `formatHourLabel` (previously raw `"$h:00"` and a `DateTimeFormatter` `"h:mm a"` pattern, which ignored / diverged from the 12/24-hour setting); the shared `DateFormatter` in `DayBoundry.kt` is now the one home for the day-label date pattern
-- **Statistics screen** (in progress): filter chips, headline cards, activity donut, plan-vs-actual matrix with adherence, sleep section (picker, floating bar chart with planned ghost bars and dashed averages, headline cards), day-rhythm stacked columns, and the portion-of-time line chart with a fitted scale; all charts hand-drawn on `Canvas`, all arithmetic in the pure `Statistics.kt`
+- **Statistics screen** (in progress): filter chips, headline cards, activity donut, plan-vs-actual matrix with adherence, sleep section (picker, floating bar chart with planned ghost bars and dashed averages, headline cards), day-rhythm stacked columns, the portion-of-time line chart with a fitted scale, and the aspiration gap's paired bars with a planned/actual key; charts hand-drawn on `Canvas` (or built from Compose layout where they hold text), all arithmetic in the pure `Statistics.kt`
 - **Unit tests**: JVM tests for sleep, the day rhythm, the weekly shares, the chart-line mapping and the axis fitting
 - **Day-structure helpers** in `DayBoundry.kt` (`logicalHourOf`/`clockHourOf`, `weekStartOf`, `HOURS_IN_DAY`/`BAND_HOURS`), replacing open-coded hour arithmetic across the hours view, schedule editor and statistics
 - App runs on physical device over wireless ADB
@@ -281,7 +283,7 @@ Done:
 - [x] Enable Room schema export and commit the v3 baseline (migration-readiness)
 - [x] Write a real `@AutoMigration` (v3 → v4 for the `notes` table) and narrow the destructive fallback to versions 1–2
 - [x] Unify hour/time formatting onto `formatHourLabel`; share one `DateFormatter` for day labels
-- [ ] Add metrics page in settings to show analysis of how time is spent. *(In progress: everything below except the last two is built.)*
+- [ ] Add metrics page in settings to show analysis of how time is spent. *(In progress: everything below except the transition matrix is built.)*
   - [x] **Filter Chips:** Two rows, filter by time period (week, month, quarter, all), and by day type (all days, weekdays, weekends).
   - [x] **Headline Stat Cards:** Total Hours logged, Days tracked fraction, Coverage
   - [x] **Donut Chart:** Total hours (and percentage) spent on each activity
@@ -290,9 +292,9 @@ Done:
   - [x] **Sleep Bar Chart:** Floating bars, x-axis is the night of each day of the week, top of bar is bedtime, length is sleep time and bottom is waketime the next day. Dashed lines show the average and the planned average. (Only responsive to the time period filter; the x-axis already covers type of day)
   - [x] **Day Rhythm:** 24 Stacked Columns, x-axis one per hour of day, each normalized to the full height, segments coloured based on activity portion. Eg. first column is 6am, 70% of the blocks in the col are sleep and 30% are gym. Follows both filters
   - [x] **Portion of Time Line Graph:** Time on x-axis, percentage of time on y-axis. Each activity gets a line. Obeys day type filter, always all time.
-  - [ ] **Aspiration Gap:** Per activity, two bars: hours planned vs hours logged (potentially normalized). Follows both filters.
+  - [x] **Aspiration Gap:** Per activity, two bars: hours planned vs hours logged, as raw hours or as a percentage of plan (toggle shared with the matrix). Follows both filters.
   - [ ] **Transition Matrix:** Similar in structure to Planned vs. Actual, but compares rows are `actual[t]` to cols of `actual[t+1]`. "After Gym you most often do Work."
-  Daily/weekly patterns/changes; Weekday vs. weekend differences; Sleep duration and consistency; Hours that weren't logged
+  Daily/weekly patterns/changes; Weekday vs. weekend differences (covered by the day-type chip on every chart, so no separate weekday/weekend chart); Sleep duration and consistency; Hours that weren't logged
 - [x] Daily Synopsis: a `notes` table holding one short diary-style entry per logical day, with the schema migration, backup support, and the editing UI (day-header button + Notes settings screen)
 - [x] Daily Synopsis **notification**: a prompt to write the day's synopsis, with its own enable/disable toggle, a configurable time-of-day, and inline reply from the shade
 - [ ] Merge-style import (currently replace-only); would need activity-ID-collision handling

@@ -35,6 +35,8 @@ import java.time.LocalDate
 import java.time.format.TextStyle as DateTextStyle
 import java.util.Locale
 import kotlin.math.ceil
+import kotlin.math.max
+import kotlin.math.round
 import kotlin.math.roundToInt
 
 @Composable
@@ -152,6 +154,7 @@ fun StatisticsSettingsScreen(
                     }
                 }
 
+                // -------- PLAN VS ACTUAL --------
                 item {
                     StatsCard(
                         title = "Plan vs Actual"
@@ -367,6 +370,40 @@ fun StatisticsSettingsScreen(
                         }
                     }
                 }
+
+                // -------- ASPIRATION GRAPH --------
+                item {
+                    StatsCard(title = "Aspiration Gap") {
+                        if (stats.aspirationGap.isEmpty()) {
+                            Text(text = "Nothing planned or logged in this range", color = TextColour)
+                        } else {
+                            StatsChipRow(
+                                options = listOf(true, false),
+                                selected = normalized,
+                                label = {
+                                    when (it) {
+                                        true -> "% of plan"
+                                        false -> "Hours"
+                                    }
+                                },
+                                onSelect = viewModel::setStatsNormalize
+                            )
+                            PairedBarChart(bars = gapBars(stats.aspirationGap, normalized))
+                            PairedBarKey(ghostLabel = "Planned", solidLabel = "Actual")
+                            Text(
+                                text = gapCaption(
+                                    normalized = normalized,
+                                    days = stats.daysInRange,
+                                    dayType = filter.dayType,
+                                    hasUnplanned = stats.aspirationGap.any { it.plannedHours == 0 }
+                                ),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = TextColour
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -387,6 +424,21 @@ private fun sleepCaption(nights: Int?, dayType: DayType): String {
 private fun rhythmCaption(days: Int, dayType: DayType): String {
     val dayWord = if (days == 1) "day" else "days"
     return "Each column is one hour of the day, across $days $dayWord${dayNamesSuffix(dayType, dayType.dayList)}"
+}
+
+// The caption under the aspiration gap. It names the *days* (dayList), like rhythmCaption,
+// because this chart filters on days, not nights. In % mode it also warns that bar lengths
+// can't be compared between rows: each row is scaled to its own longer bar.
+private fun gapCaption(normalized: Boolean, days: Int, dayType: DayType, hasUnplanned: Boolean): String {
+    val dayWord = if (days == 1) "day" else "days"
+    val range = "across $days $dayWord${dayNamesSuffix(dayType, dayType.dayList)}"
+
+    if (!normalized) return "Actual / planned hours, $range"
+
+    val unplannedNote = if (hasUnplanned) " N/A means logged but never planned." else ""
+    return "Actual as a share of planned, $range. " +
+            "Each row is scaled to its own longer bar, so compare rows by their numbers, not their lengths." +
+            unplannedNote
 }
 
 // The caption under portion of time. "Since your first log" is the part that matters: this
@@ -486,5 +538,20 @@ internal fun shareSeries(weeks: List<WeekShare>, activities: List<Activity>): Li
         }
         if (weeks.any { it.partition.orphanedHours > 0 }) add(line(DELETED_LABEL, OrphanedColour) { it.orphanedHours })
         if (weeks.any { it.partition.blankHours > 0 }) add(line(UNLOGGED_LABEL, UnloggedColour) { it.blankHours })
+    }
+}
+
+private fun gapBars(gaps: List<ActivityGap>, normalized: Boolean): List<PairedBar>{
+    return gaps.map { gap ->
+        val maxOne = max(gap.plannedHours, gap.actualHours)
+        val denominator = if(normalized){maxOne} else {1}
+        val percentOfPlanned = if (gap.plannedHours != 0) {"${(gap.actualHours*100f/gap.plannedHours).roundToInt()}%"} else {"N/A"}
+        PairedBar(
+            label = gap.activity.name,
+            colour = Color(gap.activity.colour),
+            ghost = gap.plannedHours.toFloat()/denominator.toFloat(),
+            solid = gap.actualHours.toFloat()/denominator.toFloat(),
+            valueText = if (normalized) {percentOfPlanned} else {"${gap.actualHours} / ${gap.plannedHours}h"}
+        )
     }
 }
