@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.nowwhat.ui.theme.BackgroundColour
 import com.example.nowwhat.ui.theme.TextColour
+import com.example.nowwhat.ui.theme.UnloggedColour
 import kotlin.math.roundToInt
 
 @Composable
@@ -87,12 +88,12 @@ fun ActivityMatrixGrid(
 }
 
 @Composable
-private fun MatrixSwatch(activity: Activity, modifier: Modifier = Modifier) {
+private fun MatrixSwatch(activity: Activity?, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .aspectRatio(1f)
             .padding(6.dp)
             .clip(CircleShape)
-            .background(Color(activity.colour))
+            .background(activity?.let { Color(it.colour) } ?: UnloggedColour)
     )
 }

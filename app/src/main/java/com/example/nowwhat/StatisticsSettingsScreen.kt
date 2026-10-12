@@ -32,12 +32,11 @@ import com.example.nowwhat.ui.theme.TextColour
 import com.example.nowwhat.ui.theme.UnloggedColour
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.format.TextStyle as DateTextStyle
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.max
-import kotlin.math.round
 import kotlin.math.roundToInt
+import java.time.format.TextStyle as DateTextStyle
 
 @Composable
 fun StatisticsSettingsScreen(
@@ -50,6 +49,7 @@ fun StatisticsSettingsScreen(
     val statistics by viewModel.statistics.collectAsState()
     val filter by viewModel.statsFilter.collectAsState()
     val normalized by viewModel.statsNormalize.collectAsState()
+    val changesOnly by viewModel.statsChangesOnly.collectAsState()
     val is24Hour by viewModel.is24Hour.collectAsState()
 
     Scaffold(
@@ -75,10 +75,10 @@ fun StatisticsSettingsScreen(
                     selected = filter.window,
                     label = {
                         when (it) {
+                            StatsWindow.ALL -> "All"
                             StatsWindow.WEEK -> "Week"
                             StatsWindow.MONTH -> "Month"
                             StatsWindow.QUARTER -> "Quarter"
-                            StatsWindow.ALL -> "All"
                         }
                     },
                     onSelect = viewModel::setStatsWindow
@@ -198,7 +198,7 @@ fun StatisticsSettingsScreen(
                                 matrix = stats.planVsActual,
                                 normalised = normalized
                             )
-                            ActivityLegend(stats.planVsActual.axis)
+                            ActivityLegend(stats.planVsActual.axis.filterNotNull())
                             Text(
                                 text = "${stats.unpairedHours} hours excluded (no plan or no log)",
                                 style = MaterialTheme.typography.labelMedium,
@@ -404,6 +404,56 @@ fun StatisticsSettingsScreen(
                         }
                     }
                 }
+
+                // -------- TRANSITIONS --------
+                item {
+                    StatsCard(title = "What Happens After") {
+                        val matrix = if (changesOnly) stats.transitionChangesMatrix else stats.transitionMatrix
+                        if (matrix.axis.none { it != null }) {
+                            Text(if (changesOnly){"No changes of activity in this range"} else{"Nothing logged in this range"}, color = TextColour)
+                        } else {
+                            StatsChipRow(
+                                options = listOf(true, false),
+                                selected = normalized,
+                                label = {
+                                    when (it) {
+                                        true -> "% next"
+                                        false -> "Hours"
+                                    }
+                                },
+                                onSelect = viewModel::setStatsNormalize
+                            )
+                            StatsChipRow(
+                                options = listOf(false, true),
+                                selected = changesOnly,
+                                label = {
+                                    when (it) {
+                                        false -> "All hours"
+                                        true -> "Changes only"
+                                    }
+                                },
+                                onSelect = viewModel::setStatsChangesOnly
+                            )
+                            Text(
+                                text = "Rows are this hour, columns are the hour after",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = TextColour
+                            )
+                            ActivityMatrixGrid(
+                                matrix = matrix,
+                                normalised = normalized
+                            )
+                            SwatchLegend(transitionLegend(matrix.axis))
+                            Text(
+                                text = transitionCaption(stats.daysInRange, filter.dayType),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontStyle = FontStyle.Italic,
+                                color = TextColour
+                            )
+                        }
+                    }
+                } // END Transitions
             }
         }
     }
@@ -423,15 +473,14 @@ private fun sleepCaption(nights: Int?, dayType: DayType): String {
 // which is what stops the two from looking like they disagree.
 private fun rhythmCaption(days: Int, dayType: DayType): String {
     val dayWord = if (days == 1) "day" else "days"
-    return "Each column is one hour of the day, across $days $dayWord${dayNamesSuffix(dayType, dayType.dayList)}"
+    return "Each column is one hour of the day, ${acrossDays(days, dayType)}"
 }
 
 // The caption under the aspiration gap. It names the *days* (dayList), like rhythmCaption,
 // because this chart filters on days, not nights. In % mode it also warns that bar lengths
 // can't be compared between rows: each row is scaled to its own longer bar.
 private fun gapCaption(normalized: Boolean, days: Int, dayType: DayType, hasUnplanned: Boolean): String {
-    val dayWord = if (days == 1) "day" else "days"
-    val range = "across $days $dayWord${dayNamesSuffix(dayType, dayType.dayList)}"
+    val range = acrossDays(days, dayType)
 
     if (!normalized) return "Actual / planned hours, $range"
 
@@ -555,3 +604,20 @@ private fun gapBars(gaps: List<ActivityGap>, normalized: Boolean): List<PairedBa
         )
     }
 }
+
+// One legend entry per axis slot, in axis order, so the legend reads in the same order as the
+// grid's swatches. A null slot is the Unlogged row and column.
+private fun transitionLegend(axis: List<Activity?>): List<Pair<String, Color>> =
+    axis.map { activity ->
+        if (activity == null) UNLOGGED_LABEL to UnloggedColour
+        else activity.name to Color(activity.colour)
+    }
+
+// "across 12 days · Sat, Sun": the range phrase every day-based caption ends with.
+private fun acrossDays(days: Int, dayType: DayType): String {
+    val dayWord = if (days == 1) "day" else "days"
+    return "across $days $dayWord${dayNamesSuffix(dayType, dayType.dayList)}"
+}
+
+private fun transitionCaption(days: Int, dayType: DayType): String =
+    "Each row shows where the hour after an activity went, ${acrossDays(days, dayType)}"

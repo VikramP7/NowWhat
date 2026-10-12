@@ -92,6 +92,9 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
     private val _statsNormalize = MutableStateFlow(true)
     val statsNormalize: StateFlow<Boolean> = _statsNormalize
 
+    private val _statsChangesOnly = MutableStateFlow(false)
+    val statsChangesOnly: StateFlow<Boolean> = _statsChangesOnly
+
     val statistics: StateFlow<Statistics?> = combine(
         entriesFlow,
         activitiesFlow,
@@ -125,6 +128,10 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
     fun setStatsNormalize(normalize: Boolean){
         _statsNormalize.value = normalize
+    }
+
+    fun setStatsChangesOnly(changesOnly: Boolean){
+        _statsChangesOnly.value = changesOnly
     }
 
     fun setSleepActivityId(id: Long){

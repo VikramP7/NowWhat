@@ -10,7 +10,7 @@ private const val SLEEP_MIN_EPISODE_HOURS = 3 // min number of hours required to
 private const val SLEEP_PIVOT_HOUR = 12 // the point bedtimes are averaged from (assuming nobody sleeps across midday, and a night-shift user would want a midnight pivot)
 
 enum class StatsWindow(val days: Int?) {
-    WEEK(7), MONTH(30), QUARTER(90), ALL(null)
+    ALL(null), WEEK(7), MONTH(30), QUARTER(90)
 }
 
 enum class DayType(val dayList: List<DayOfWeek>, val nightList: List<DayOfWeek>) {
@@ -76,7 +76,10 @@ data class Statistics(
 
     val weeklyShares: List<WeekShare>,
 
-    val aspirationGap: List<ActivityGap>
+    val aspirationGap: List<ActivityGap>,
+
+    val transitionMatrix: ActivityMatrix,
+    val transitionChangesMatrix: ActivityMatrix
 )
 
 fun computeStatistics(
@@ -113,21 +116,26 @@ fun computeStatistics(
         firstLoggedDay = firstLoggedDay,
         today = today
     )
-    val daySet = filteredDays.toSet()
 
     val finishedHoursToday = logicalHourOf(hourOfDay(now), dayStartHour)
     val inRangeEntries = filterEntriesUntilNow(filteredDays)
 
     // -------- STATS CARDS (total days/hours) --------
+    fun calendarHoursOf(days: List<LocalDate>): List<Long>{
+        return days.flatMap { day -> List(if (day == today) finishedHoursToday else HOURS_IN_DAY) { logicalHour ->
+                timestampOf(day, clockHourOf(logicalHour, dayStartHour), dayStartHour)
+            }
+        }
+    }
+
     // ignores DST changes assumes 24-hour days
     fun hoursIn(days: List<LocalDate>): Int {
-        return days.sumOf { date ->
-            if (date == today) finishedHoursToday else HOURS_IN_DAY
-        }
+        return calendarHoursOf(days).size
     }
 
     val daysTracked = inRangeEntries.filter { activityMap[it.actualActivityId] != null }.distinctBy { logicalDateOf(it.timestamp, dayStartHour) }.size
     val hoursInRange = hoursIn(filteredDays)
+    val calendarHours = calendarHoursOf(filteredDays)
 
     // -------- DONUT CHART VALUES --------
     val actual = totalsFor(inRangeEntries.map { it.actualActivityId }, activityMap)
@@ -201,14 +209,12 @@ fun computeStatistics(
         )
     }
 
-    val daysBeforeToday = filteredDays.count { it != today }
-
     val rhythmColumns = List(HOURS_IN_DAY) { logicalHour ->
         val clockHour = clockHourOf(logicalHour,dayStartHour)
         val col = inRangeEntries.filter { entry -> clockHour == hourOfDay(entry.timestamp) }
         val rhythmHourPartition = partitionOf(
             ids = col.map { it.actualActivityId },
-            calendarHours = daysBeforeToday + if (logicalHour < finishedHoursToday && today in daySet) 1 else 0
+            calendarHours = calendarHours.count { hourOfDay(it) == clockHour }
         )
         RhythmColumn(
             clockHour = clockHour,
@@ -252,6 +258,31 @@ fun computeStatistics(
         activities = activities
     )
 
+    // -------- TRANSITION MATRIX --------
+    val calendarHoursSet = calendarHours.toSet()
+    val loggedTimestampLookup = inRangeEntries.associate { entry ->
+        entry.timestamp to entry.actualActivityId?.takeIf { it in activityMap }
+    }
+
+    val transitionPairs = calendarHoursSet.mapNotNull { hourTimeStamp ->
+        if (calendarHoursSet.contains(hourTimeStamp + HOUR_MS)){
+            loggedTimestampLookup[hourTimeStamp] to loggedTimestampLookup[hourTimeStamp + HOUR_MS]
+        }else {
+            null
+        }
+    }
+
+    val transitionMatrix = activityMatrix(
+        pairs = transitionPairs,
+        activities = activities
+    )
+
+    val transitionChangesMatrix = activityMatrix(
+        pairs = transitionPairs.filter { pair -> pair.first != pair.second },
+        activities = activities
+    )
+
+
     return Statistics(
         loggedHours = actual.enteredHours,
         blankLogHours = blankLogHours,
@@ -276,7 +307,9 @@ fun computeStatistics(
         nightlyPlannedSleepAverages = plannedSleepDaysOfWeekAverages,
         dayRhythm = rhythmColumns,
         weeklyShares = weeklyShares,
-        aspirationGap = aspirationGap
+        aspirationGap = aspirationGap,
+        transitionMatrix = transitionMatrix,
+        transitionChangesMatrix = transitionChangesMatrix
     )
 }
 
@@ -324,29 +357,38 @@ fun daysInRange(
 }
 
 data class ActivityMatrix(
-    val axis: List<Activity>,      // same list, same order, for rows and columns
+    val axis: List<Activity?>,      // same list, same order, for rows and columns
     val counts: List<List<Int>>    // counts[row][col]
 )
 
 private fun activityMatrix(
-    pairs: List<Pair<Long, Long>>,
+    pairs: List<Pair<Long?, Long?>>,
     activities: List<Activity>
 ): ActivityMatrix {
     // Determine which pairs actually contain non-null and real activities
     val activityIdSet = activities.map { it.id }.toSet()
-    val usedPairs = pairs.filter { it.first in activityIdSet && it.second in activityIdSet }
+    fun known(id: Long?) = id == null || id in activityIdSet
+    val usedPairs = pairs.filter { known(it.first) && known(it.second) }
+
     // filter out all activities that are not used in the pairs list
     val usedActivityIdSet = (usedPairs.map {it.first}+usedPairs.map {it.second}).toSet()
     val usedActivities = activities.filter { it.id in usedActivityIdSet }
+    // add null to the axis if used
+    val axis = if (usedPairs.any { pair -> pair.first == null || pair.second == null}){
+        usedActivities + listOf(null)
+    }else{
+        usedActivities
+    }
+
     // group pairs and count how many in each group
     val pairCountsMap = usedPairs.groupingBy { it }.eachCount()
-    val pairCounts = List(usedActivities.size){ row -> List(usedActivities.size) {col ->
-            pairCountsMap[usedActivities[row].id to usedActivities[col].id] ?: 0
+    val pairCounts = List(axis.size){ row -> List(axis.size) {col ->
+            pairCountsMap[axis[row]?.id to (axis[col]?.id)] ?: 0
         }
     }
 
     return ActivityMatrix(
-        axis = usedActivities,
+        axis = axis,
         counts = pairCounts
     )
 }
