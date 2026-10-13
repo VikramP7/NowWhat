@@ -1,5 +1,6 @@
 package com.example.nowwhat
 
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -8,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
@@ -23,6 +25,12 @@ fun HeadlineStat(
             style = valueStyle,
             color = TextColour,
             maxLines = 1,
+            // Shrinks the text only when it won't fit on one line: it starts at the style's own size
+            // and steps down, never below 12sp. "100/120" fits instead of clipping to "100/10".
+            autoSize = TextAutoSize.StepBased(
+                minFontSize = 12.sp,
+                maxFontSize = valueStyle.fontSize
+            ),
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Text(

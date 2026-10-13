@@ -1,20 +1,27 @@
 package com.example.nowwhat
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.nowwhat.ui.theme.GHOST_ALPHA
 import java.time.DayOfWeek
 import java.time.format.TextStyle as DayNameStyle
 import java.util.Locale
@@ -64,6 +71,10 @@ private fun sleepChartTicks(range: SleepChartRange): List<Float> {
  * @param plannedNights planned sleep per weekday, drawn as a faint wide bar behind the actual one.
  * @param average the dashed bedtime/waketime lines. Pass the day-type-filtered average.
  * @param plannedAverage optional second pair of dashed lines, fainter.
+ * @param selectedDay the night to highlight: its bars stay at full strength and its day label
+ *   goes bold, while every other night's bars fade. Null draws every night normally.
+ * @param onDayClick called with the weekday whose slot was tapped (anywhere in its column, bar
+ *   or not), or null for a tap in the left gutter. What that means is the caller's decision.
  */
 @Composable
 fun SleepBarChart(
@@ -78,9 +89,16 @@ fun SleepBarChart(
     chartHeight: Dp = 240.dp,
     barWidthFraction: Float = 0.42f,
     plannedWidthFraction: Float = 0.72f,
-    plannedAlpha: Float = 0.28f,
-    cornerRadius: Dp = 4.dp
+    plannedAlpha: Float = GHOST_ALPHA,
+    cornerRadius: Dp = 4.dp,
+    selectedDay: DayOfWeek? = null,
+    onDayClick: (DayOfWeek?) -> Unit = {},
+    fadedAlpha: Float = 0.35f
 ) {
+    // pointerInput only restarts when its keys change, so it reads the latest callback through
+    // this rather than the first lambda it captured (same as DonutChart and LineChart).
+    val currentOnDayClick by rememberUpdatedState(onDayClick)
+
     // Nothing to draw and no range to draw it in; the caller shows an empty state instead.
     val range = sleepChartRange(nights, plannedNights) ?: return
     val span = range.bottomOffset - range.topOffset
@@ -94,21 +112,41 @@ fun SleepBarChart(
     val tickLabels = ticks.map { offset ->
         measurer.measure(formatClockLabel(sleepOffsetToMinuteOfDay(offset), is24Hour), labelStyle)
     }
+    // The selected night's label is measured bold, so it's re-measured whenever the selection
+    // changes (measuring is cheap at seven labels).
     val dayLabels = DayOfWeek.entries.map { day ->
-        measurer.measure(day.getDisplayName(DayNameStyle.SHORT, Locale.getDefault()), labelStyle)
+        val style = if (day == selectedDay) labelStyle.copy(fontWeight = FontWeight.Bold) else labelStyle
+        measurer.measure(day.getDisplayName(DayNameStyle.SHORT, Locale.getDefault()), style)
+    }
+
+    // The left edge of the plot, worked out here rather than inside the Canvas so drawing and
+    // tap-testing share it: the widest y label plus a gap. (Outside a Canvas there's no toPx(),
+    // hence LocalDensity.)
+    val gap = with(LocalDensity.current) { 6.dp.toPx() }
+    val plotLeft = tickLabels.maxOf { it.size.width }.toFloat() + gap
+
+    // Which weekday's column a horizontal position falls in, or null left of the plot. The seven
+    // slots split the plot evenly, exactly as the bars are laid out below.
+    fun dayAt(x: Float, width: Float): DayOfWeek? {
+        if (x < plotLeft || width <= plotLeft) return null
+        val slotWidth = (width - plotLeft) / DayOfWeek.entries.size
+        val index = ((x - plotLeft) / slotWidth).toInt().coerceIn(0, DayOfWeek.entries.size - 1)
+        return DayOfWeek.entries[index]
     }
 
     Canvas(
         modifier = modifier
             .fillMaxWidth()
             .height(chartHeight)
+            // A tap anywhere in a night's column selects that night, so a short bar (or an empty
+            // slot) is as easy to hit as a long one.
+            .pointerInput(plotLeft) {
+                detectTapGestures { tap -> currentOnDayClick(dayAt(tap.x, size.width.toFloat())) }
+            }
     ) {
-        val gap = 6.dp.toPx()
-
         // The plot area is what's left after the axis gutters. Half a label's height of
         // headroom top and bottom keeps the first and last y labels from clipping.
         val labelHeight = tickLabels.maxOf { it.size.height }.toFloat()
-        val plotLeft = tickLabels.maxOf { it.size.width }.toFloat() + gap
         val plotRight = size.width
         val plotTop = labelHeight / 2f
         val plotBottom = size.height - dayLabels.maxOf { it.size.height } - gap - labelHeight / 2f
@@ -144,10 +182,14 @@ fun SleepBarChart(
         DayOfWeek.entries.forEachIndexed { index, day ->
             val slotCentre = plotLeft + index * slotWidth + slotWidth / 2f
 
+            // With a selection, every other night fades. Each bar is a single drawRoundRect, so a
+            // translucent colour is safe here: nothing within one bar is painted twice.
+            val strength = if (selectedDay == null || day == selectedDay) 1f else fadedAlpha
+
             plannedNights[day]?.let { planned ->
                 val top = yFor(planned.bedOffset)
                 drawRoundRect(
-                    color = barColour.copy(alpha = plannedAlpha),
+                    color = barColour.copy(alpha = plannedAlpha * strength),
                     topLeft = Offset(slotCentre - plannedWidth / 2f, top),
                     size = Size(plannedWidth, yFor(planned.wakeOffset) - top),
                     cornerRadius = radius
@@ -157,7 +199,7 @@ fun SleepBarChart(
             nights[day]?.let { actual ->
                 val top = yFor(actual.bedOffset)
                 drawRoundRect(
-                    color = barColour,
+                    color = barColour.copy(alpha = strength),
                     topLeft = Offset(slotCentre - barWidth / 2f, top),
                     size = Size(barWidth, yFor(actual.wakeOffset) - top),
                     cornerRadius = radius

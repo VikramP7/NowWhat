@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -93,7 +92,7 @@ private fun MatrixSwatch(activity: Activity?, modifier: Modifier = Modifier) {
         modifier = modifier
             .aspectRatio(1f)
             .padding(6.dp)
-            .clip(CircleShape)
+            .clip(LegendSwatchShape)
             .background(activity?.let { Color(it.colour) } ?: UnloggedColour)
     )
 }

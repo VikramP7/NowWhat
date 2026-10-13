@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,8 +20,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -52,6 +59,16 @@ fun StatisticsSettingsScreen(
     val changesOnly by viewModel.statsChangesOnly.collectAsState()
     val is24Hour by viewModel.is24Hour.collectAsState()
 
+    var donutSelection by rememberSaveable { mutableStateOf<String?>(null) }
+    var shareSelection by rememberSaveable { mutableStateOf<String?>(null) }
+    var shareWeek by rememberSaveable { mutableStateOf<Int?>(null) }
+    var sleepSelection by rememberSaveable { mutableStateOf<DayOfWeek?>(null) }
+
+    val selectDonutSlice: (String?) -> Unit = { label ->
+        donutSelection = if (label == null || label == donutSelection) null else label
+    }
+
+
     Scaffold(
         modifier = modifier,
         containerColor = BackgroundColour,
@@ -62,14 +79,16 @@ fun StatisticsSettingsScreen(
             )
         }
     ) { innerPadding ->
-        LazyColumn(
+        val fadeColour = BackgroundColour
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(innerPadding)
         ) {
-            item {
+            Column(
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 StatsChipRow(
                     options = StatsWindow.entries,
                     selected = filter.window,
@@ -83,8 +102,6 @@ fun StatisticsSettingsScreen(
                     },
                     onSelect = viewModel::setStatsWindow
                 )
-            }
-            item {
                 StatsChipRow(
                     options = DayType.entries,
                     selected = filter.dayType,
@@ -98,362 +115,487 @@ fun StatisticsSettingsScreen(
                     onSelect = viewModel::setStatsDayType
                 )
             }
-            val stats = statistics
-            if (stats == null) {
-                item { Text(text = "Crunching the numbers...", color = TextColour) }
-            } else {
 
-                item {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp))
-                    {
-                        HeadlineStat(
-                            value = "${stats.loggedHours}",
-                            label = "Hours Logged",
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .drawWithContent {
+                        drawContent()
+                        val fadeHeight = 10.dp.toPx()
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(fadeColour, fadeColour.copy(alpha = 0f)),
+                                startY = 0f,
+                                endY = fadeHeight
+                            ),
+                            size = Size(size.width, fadeHeight)
                         )
-                        HeadlineStat(
-                            value = "${stats.daysTracked}/${stats.daysInRange}",
-                            label = "Days Tracked",
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
+                    },
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val stats = statistics
+                if (stats == null) {
+                    item { Text(text = "Crunching the numbers...", color = TextColour) }
+                } else {
+
+                    item {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         )
-                        HeadlineStat(
-                            value = if (stats.coverage != null)
-                                "${(stats.coverage*100).roundToInt()} %" else "N/A",
-                            label = "Coverage",
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                        )
+                        {
+                            HeadlineStat(
+                                value = "${stats.loggedHours}",
+                                label = "Hours Logged",
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                            HeadlineStat(
+                                value = "${stats.daysTracked}/${stats.daysInRange}",
+                                label = "Days Tracked",
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                            HeadlineStat(
+                                value = if (stats.coverage != null)
+                                    "${(stats.coverage * 100).roundToInt()} %" else "N/A",
+                                label = "Coverage",
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                            )
+                        }
                     }
-                }
-                val slices = stackSlices(stats.actualActivityTotals, stats.orphanedLogHours, stats.blankLogHours)
+                    val slices = stackSlices(
+                        stats.actualActivityTotals,
+                        stats.orphanedLogHours,
+                        stats.blankLogHours
+                    )
 
-                item {
-                    StatsCard(
-                        title = "Activity Shares"
-                    ) {
-                        DonutChart(
-                            slices = slices,
-                            ringThickness = 110.dp,
-                            centreContent = {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("${stats.loggedHours}",style = MaterialTheme.typography.displaySmall, color = TextColour)
-                                    Text("of ${stats.hoursInRange} h",style = MaterialTheme.typography.titleMedium, color = TextColour)
+                    item {
+                        StatsCard(
+                            title = "Where Your Time Went"
+                        ) {
+                            DonutChart(
+                                slices = slices,
+                                ringFraction = 0.32f,
+                                selectedLabel = donutSelection,
+                                onSliceClick = selectDonutSlice,
+                                centreContent = {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            "${stats.loggedHours}",
+                                            style = MaterialTheme.typography.displaySmall,
+                                            color = TextColour
+                                        )
+                                        Text(
+                                            "of ${stats.hoursInRange} h",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = TextColour
+                                        )
+                                    }
                                 }
-                            }
-                        )
-                        DonutLegend( slices = slices )
+                            )
+                            DonutLegend(
+                                slices = slices,
+                                selectedLabel = donutSelection,
+                                onRowClick = selectDonutSlice
+                            )
+                        }
                     }
-                }
 
-                // -------- PLAN VS ACTUAL --------
-                item {
-                    StatsCard(
-                        title = "Plan vs Actual"
-                    ) {
-                        if (stats.adherence == null){
-                            Text("No data in selected range...", color = TextColour)
-                        } else{
-                            Column(
-                                modifier = Modifier.align(Alignment.CenterHorizontally),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "${(stats.adherence * 100).roundToInt()}%",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    color = TextColour
+                    // -------- PLAN VS ACTUAL --------
+                    item {
+                        StatsCard(
+                            title = "Plan vs Actual"
+                        ) {
+                            if (stats.adherence == null) {
+                                Text("No hours with both a plan and a log in this range", color = TextColour)
+                            } else {
+                                Column(
+                                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = "${(stats.adherence * 100).roundToInt()}%",
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        color = TextColour
+                                    )
+                                    Text(
+                                        text = "of hours you logged went to plan",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = TextColour
+                                    )
+                                }
+                                StatsChipRow(
+                                    options = listOf(true, false),
+                                    selected = normalized,
+                                    label = {
+                                        when (it) {
+                                            true -> "% of plan"
+                                            false -> "Hours"
+                                        }
+                                    },
+                                    onSelect = viewModel::setStatsNormalize
                                 )
                                 Text(
-                                    text = "of hours you logged went to plan",
+                                    text = "Rows are planned, columns are actual",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontStyle = FontStyle.Italic,
+                                    color = TextColour
+                                )
+                                ActivityMatrixGrid(
+                                    matrix = stats.planVsActual,
+                                    normalised = normalized
+                                )
+                                ActivityLegend(stats.planVsActual.axis.filterNotNull())
+                                Text(
+                                    text = "${stats.unpairedHours} hours excluded (no plan or no log)",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = TextColour
                                 )
                             }
-                            StatsChipRow(
-                                options = listOf(true, false),
-                                selected = normalized,
-                                label = {
-                                    when (it) {
-                                        true -> "% of plan"
-                                        false -> "Hours"
-                                    }
-                                },
-                                onSelect = viewModel::setStatsNormalize
-                            )
-                            Text(
-                                text = "Rows are planned, columns are actual",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontStyle = FontStyle.Italic,
-                                color = TextColour
-                            )
-                            ActivityMatrixGrid(
-                                matrix = stats.planVsActual,
-                                normalised = normalized
-                            )
-                            ActivityLegend(stats.planVsActual.axis.filterNotNull())
-                            Text(
-                                text = "${stats.unpairedHours} hours excluded (no plan or no log)",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = TextColour
-                            )
                         }
-                    }
-                } // END Plan vs Actual Matrix
+                    } // END Plan vs Actual Matrix
 
-                // -------- SLEEP --------
-                val sleepAverage = stats.sleepAverage
+                    // -------- SLEEP --------
+                    val sleepAverage = stats.sleepAverage
 
-                item {
-                    StatsCard(
-                        title = "Sleep"
-                    ) {
-                        if (stats.sleepActivity == null) {
-                            Text("Choose which activity means sleep", color = TextColour)
-                        }else{
-                            Row {
-                                Text("Sleep is tracked as ", color = TextColour)
-                                Text(stats.sleepActivity.name, color = Color(stats.sleepActivity.colour))
-                                Text(":", color = TextColour)
+                    item {
+                        StatsCard(
+                            title = "Sleep"
+                        ) {
+                            if (stats.sleepActivity == null) {
+                                Text("Choose which activity means sleep", color = TextColour)
+                            } else {
+                                Row {
+                                    Text("Sleep is tracked as ", color = TextColour)
+                                    Text(
+                                        stats.sleepActivity.name,
+                                        color = Color(stats.sleepActivity.colour)
+                                    )
+                                    Text(":", color = TextColour)
+                                }
                             }
-                        }
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)){
-                            items(activities, key = { it.id }){ activity ->
-                                PresetButton(
-                                    activity = activity,
-                                    onClick = {viewModel.setSleepActivityId(activity.id)},
-                                    filled = stats.sleepActivity?.id == activity.id
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(activities, key = { it.id }) { activity ->
+                                    PresetButton(
+                                        activity = activity,
+                                        onClick = { viewModel.setSleepActivityId(activity.id) },
+                                        filled = stats.sleepActivity?.id == activity.id
+                                    )
+                                }
+                            }
+
+                            if (stats.sleepActivity != null) {
+                                SleepBarChart(
+                                    nights = stats.nightlySleepAverages,
+                                    plannedNights = stats.nightlyPlannedSleepAverages,
+                                    average = stats.sleepAverage,
+                                    plannedAverage = stats.plannedSleepAverage,
+                                    barColour = Color(stats.sleepActivity.colour),
+                                    labelColour = TextColour,
+                                    is24Hour = is24Hour,
+                                    selectedDay = sleepSelection,
+                                    // The same night again, or the gutter, clears; another night selects it.
+                                    onDayClick = { day -> sleepSelection = if (day == null || day == sleepSelection) null else day }
+                                )
+                                sleepSelection?.let { day ->
+                                    Text(
+                                        text = sleepReadout(day, stats.nightlySleepAverages[day], is24Hour),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = TextColour
+                                    )
+                                }
+                                Text(
+                                    text = "Each bar is a night, named for the evening it starts",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontStyle = FontStyle.Italic,
+                                    color = TextColour
                                 )
                             }
                         }
+                    }
 
-                        if(stats.sleepActivity != null){
-                            SleepBarChart(
-                                nights = stats.nightlySleepAverages,
-                                plannedNights = stats.nightlyPlannedSleepAverages,
-                                average = stats.sleepAverage,
-                                plannedAverage = stats.plannedSleepAverage,
-                                barColour = Color(stats.sleepActivity.colour),
-                                labelColour = TextColour,
-                                is24Hour = is24Hour
+                    item {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            HeadlineStat(
+                                value = sleepAverage?.let {
+                                    formatClockLabel(
+                                        it.bedMinuteOfDay,
+                                        is24Hour
+                                    )
+                                } ?: "—",
+                                label = "Avg Bedtime",
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                valueStyle = MaterialTheme.typography.titleLarge
                             )
-                            Text(
-                                text = "Each bar is a night, named for the evening it starts",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontStyle = FontStyle.Italic,
-                                color = TextColour
+                            HeadlineStat(
+                                value = sleepAverage?.let { formatDurationLabel(it.hours) } ?: "—",
+                                label = "Avg Sleep",
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                valueStyle = MaterialTheme.typography.titleLarge
+                            )
+                            HeadlineStat(
+                                value = sleepAverage?.let {
+                                    formatClockLabel(
+                                        it.wakeMinuteOfDay,
+                                        is24Hour
+                                    )
+                                } ?: "—",
+                                label = "Avg Waketime",
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                                valueStyle = MaterialTheme.typography.titleLarge
                             )
                         }
                     }
-                }
 
-                item {
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(IntrinsicSize.Min),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        HeadlineStat(
-                            value = sleepAverage?.let { formatClockLabel(it.bedMinuteOfDay, is24Hour) } ?: "—",
-                            label = "Avg Bedtime",
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            valueStyle = MaterialTheme.typography.titleLarge
-                        )
-                        HeadlineStat(
-                            value = sleepAverage?.let { formatDurationLabel(it.hours) } ?: "—",
-                            label = "Avg Sleep",
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            valueStyle = MaterialTheme.typography.titleLarge
-                        )
-                        HeadlineStat(
-                            value = sleepAverage?.let { formatClockLabel(it.wakeMinuteOfDay, is24Hour) } ?: "—",
-                            label = "Avg Waketime",
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            valueStyle = MaterialTheme.typography.titleLarge
+                    item {
+                        Text(
+                            text = sleepCaption(
+                                nights = sleepAverage?.nights,
+                                dayType = filter.dayType
+                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontStyle = FontStyle.Italic,
+                            color = TextColour,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
-                }
 
-                item {
-                    Text(
-                        text = sleepCaption(
-                            nights = sleepAverage?.nights,
-                            dayType = filter.dayType
-                        ),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontStyle = FontStyle.Italic,
-                        color = TextColour,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                    // -------- DAY RHYTHM --------
+                    val rhythmColumns = stats.dayRhythm.map {
+                        stackSlices(
+                            it.partition.totals,
+                            it.partition.orphanedHours,
+                            it.partition.blankHours
+                        )
+                    }
+                    // Built by the same rule as the stacks, so the legend reads left to right in the
+                    // order the columns stack bottom to top.
+                    val rhythmLegend = stackSlices(
+                        totals = stats.actualActivityTotals.inOrderOf(activities),
+                        orphanedHours = stats.orphanedLogHours,
+                        blankHours = stats.blankLogHours
                     )
-                }
+                    // A label every 6 hours, on the same boundaries as the Morning/Day/Evening/Night
+                    // rows of the hours view. Index = logical hour, so column 0 is the day start.
+                    val rhythmLabels = stats.dayRhythm.mapIndexed { logicalHour, col ->
+                        if (logicalHour % BAND_HOURS == 0) formatHourLabel(
+                            col.clockHour,
+                            is24Hour
+                        ) else null
+                    }
 
-                // -------- DAY RHYTHM --------
-                val rhythmColumns = stats.dayRhythm.map { stackSlices(it.partition.totals, it.partition.orphanedHours, it.partition.blankHours) }
-                // Built by the same rule as the stacks, so the legend reads left to right in the
-                // order the columns stack bottom to top.
-                val rhythmLegend = stackSlices(
-                    totals = stats.actualActivityTotals.inOrderOf(activities),
-                    orphanedHours = stats.orphanedLogHours,
-                    blankHours = stats.blankLogHours
-                )
-                // A label every 6 hours, on the same boundaries as the Morning/Day/Evening/Night
-                // rows of the hours view. Index = logical hour, so column 0 is the day start.
-                val rhythmLabels = stats.dayRhythm.mapIndexed { logicalHour, col ->
-                    if (logicalHour % BAND_HOURS == 0) formatHourLabel(col.clockHour, is24Hour) else null
-                }
-
-                item {
-                    StatsCard(title = "Day Rhythm") {
-                        if (stats.hoursInRange == 0) {
-                            Text("No hours in this range yet", color = TextColour)
-                        } else {
-                            StackedColumnChart(
-                                columns = rhythmColumns,
-                                labels = rhythmLabels,
-                                labelColour = TextColour
-                            )
-                            SwatchLegend(entries = rhythmLegend.map { it.label to it.colour })
-                            Text(
-                                text = rhythmCaption(days = stats.daysInRange, dayType = filter.dayType),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontStyle = FontStyle.Italic,
-                                color = TextColour
-                            )
+                    item {
+                        StatsCard(title = "Day Rhythm") {
+                            if (stats.hoursInRange == 0) {
+                                Text("No hours in this range yet", color = TextColour)
+                            } else {
+                                StackedColumnChart(
+                                    columns = rhythmColumns,
+                                    labels = rhythmLabels,
+                                    labelColour = TextColour
+                                )
+                                SwatchLegend(entries = rhythmLegend.map { it.label to it.colour })
+                                Text(
+                                    text = rhythmCaption(
+                                        days = stats.daysInRange,
+                                        dayType = filter.dayType
+                                    ),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontStyle = FontStyle.Italic,
+                                    color = TextColour
+                                )
+                            }
                         }
                     }
-                }
 
-                // -------- PORTION OF TIME --------
-                // All time, whatever the window chip says; only the day-type chip applies here.
-                val shareLines = shareSeries(stats.weeklyShares, activities)
-                val shareLabels = monthLabels(stats.weeklyShares.map { it.weekStart })
-                // Fitted to the largest share any line reaches, Unlogged included, so no line
-                // is ever cut off at the top.
-                val shareScale = shareAxis(shareLines.flatMap { it.values }.filterNotNull().maxOrNull() ?: 0f)
+                    // -------- PORTION OF TIME --------
+                    // All time, whatever the window chip says; only the day-type chip applies here.
+                    val shareLines = shareSeries(stats.weeklyShares, activities)
+                    val shareLabels = monthLabels(stats.weeklyShares.map { it.weekStart })
+                    // Fitted to the largest share any line reaches, Unlogged included, so no line
+                    // is ever cut off at the top.
+                    val shareScale =
+                        shareAxis(
+                            shareLines.flatMap { it.values }.filterNotNull().maxOrNull() ?: 0f
+                        )
 
-                item {
-                    StatsCard(title = "Portion of Time") {
-                        // No lines means no week had any hours yet (nothing logged, or a day-type
-                        // filter whose days haven't come round since the first log).
-                        if (shareLines.isEmpty()) {
-                            Text("No hours to show yet", color = TextColour)
-                        } else {
-                            LineChart(
-                                series = shareLines,
-                                labelColour = TextColour,
-                                xLabels = shareLabels,
-                                gridLines = shareScale.gridLines,
-                                yMax = shareScale.top
-                            )
-                            SwatchLegend(entries = shareLines.map { it.label to it.colour })
-                            Text(
-                                text = shareCaption(filter.dayType),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontStyle = FontStyle.Italic,
-                                color = TextColour
-                            )
-                        }
-                    }
-                }
+                    item {
+                        StatsCard(title = "Portion of Time") {
+                            // No lines means no week had any hours yet (nothing logged, or a day-type
+                            // filter whose days haven't come round since the first log).
+                            if (shareLines.isEmpty()) {
+                                Text("No hours to show yet", color = TextColour)
+                            } else {
+                                fun selectShare(label: String?, week: Int?) {
+                                    shareSelection = label
+                                    shareWeek = if (label == null) null else week
+                                }
 
-                // -------- ASPIRATION GRAPH --------
-                item {
-                    StatsCard(title = "Aspiration Gap") {
-                        if (stats.aspirationGap.isEmpty()) {
-                            Text(text = "Nothing planned or logged in this range", color = TextColour)
-                        } else {
-                            StatsChipRow(
-                                options = listOf(true, false),
-                                selected = normalized,
-                                label = {
-                                    when (it) {
-                                        true -> "% of plan"
-                                        false -> "Hours"
+                                LineChart(
+                                    series = shareLines,
+                                    labelColour = TextColour,
+                                    xLabels = shareLabels,
+                                    gridLines = shareScale.gridLines,
+                                    yMax = shareScale.top,
+                                    visiblePoints = 12,
+                                    selectedLabel = shareSelection,
+                                    selectedIndex = shareWeek,
+                                    // Near a line: select it at that week (tapping along the selected line moves the
+                                    // readout). Away from every line: clear.
+                                    onTap = { label, week -> selectShare(label, week) }
+                                )
+
+                                // The readout, only while a line is selected and still on the chart.
+                                val selectedLine = shareLines.firstOrNull { it.label == shareSelection }
+                                val readoutWeek = shareWeek
+                                if (selectedLine != null && readoutWeek != null) {
+                                    stats.weeklyShares.getOrNull(readoutWeek)?.let { week ->
+                                        Text(
+                                            text = shareReadout(selectedLine.label, selectedLine.values.getOrNull(readoutWeek), week.weekStart),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = TextColour
+                                        )
                                     }
-                                },
-                                onSelect = viewModel::setStatsNormalize
-                            )
-                            PairedBarChart(bars = gapBars(stats.aspirationGap, normalized))
-                            PairedBarKey(ghostLabel = "Planned", solidLabel = "Actual")
-                            Text(
-                                text = gapCaption(
-                                    normalized = normalized,
-                                    days = stats.daysInRange,
-                                    dayType = filter.dayType,
-                                    hasUnplanned = stats.aspirationGap.any { it.plannedHours == 0 }
-                                ),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontStyle = FontStyle.Italic,
-                                color = TextColour
-                            )
-                        }
-                    }
-                }
+                                }
 
-                // -------- TRANSITIONS --------
-                item {
-                    StatsCard(title = "What Happens After") {
-                        val matrix = if (changesOnly) stats.transitionChangesMatrix else stats.transitionMatrix
-                        if (matrix.axis.none { it != null }) {
-                            Text(if (changesOnly){"No changes of activity in this range"} else{"Nothing logged in this range"}, color = TextColour)
-                        } else {
-                            StatsChipRow(
-                                options = listOf(true, false),
-                                selected = normalized,
-                                label = {
-                                    when (it) {
-                                        true -> "% next"
-                                        false -> "Hours"
+                                SwatchLegend(
+                                    entries = shareLines.map { it.label to it.colour },
+                                    selectedName = shareSelection,
+                                    // The same entry again clears; another entry selects that line at its newest week
+                                    // with a value, which is the end the chart opens on.
+                                    onEntryClick = { label ->
+                                        if (label == shareSelection) selectShare(null, null)
+                                        else selectShare(
+                                            label,
+                                            shareLines.first { it.label == label }.values.indexOfLast { it != null }.takeIf { it >= 0 }
+                                        )
                                     }
-                                },
-                                onSelect = viewModel::setStatsNormalize
-                            )
-                            StatsChipRow(
-                                options = listOf(false, true),
-                                selected = changesOnly,
-                                label = {
-                                    when (it) {
-                                        false -> "All hours"
-                                        true -> "Changes only"
-                                    }
-                                },
-                                onSelect = viewModel::setStatsChangesOnly
-                            )
-                            Text(
-                                text = "Rows are this hour, columns are the hour after",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontStyle = FontStyle.Italic,
-                                color = TextColour
-                            )
-                            ActivityMatrixGrid(
-                                matrix = matrix,
-                                normalised = normalized
-                            )
-                            SwatchLegend(transitionLegend(matrix.axis))
-                            Text(
-                                text = transitionCaption(stats.daysInRange, filter.dayType),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontStyle = FontStyle.Italic,
-                                color = TextColour
-                            )
+                                )
+                                Text(
+                                    text = shareCaption(filter.dayType),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontStyle = FontStyle.Italic,
+                                    color = TextColour
+                                )
+                            }
                         }
                     }
-                } // END Transitions
+
+                    // -------- ASPIRATION GRAPH --------
+                    item {
+                        StatsCard(title = "Aspiration Gap") {
+                            if (stats.aspirationGap.isEmpty()) {
+                                Text(
+                                    text = "Nothing planned or logged in this range",
+                                    color = TextColour
+                                )
+                            } else {
+                                StatsChipRow(
+                                    options = listOf(true, false),
+                                    selected = normalized,
+                                    label = {
+                                        when (it) {
+                                            true -> "% of plan"
+                                            false -> "Hours"
+                                        }
+                                    },
+                                    onSelect = viewModel::setStatsNormalize
+                                )
+                                PairedBarChart(bars = gapBars(stats.aspirationGap, normalized))
+                                PairedBarKey(ghostLabel = "Planned", solidLabel = "Actual")
+                                Text(
+                                    text = gapCaption(
+                                        normalized = normalized,
+                                        days = stats.daysInRange,
+                                        dayType = filter.dayType,
+                                        hasUnplanned = stats.aspirationGap.any { it.plannedHours == 0 }
+                                    ),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontStyle = FontStyle.Italic,
+                                    color = TextColour
+                                )
+                            }
+                        }
+                    }
+
+                    // -------- TRANSITIONS --------
+                    item {
+                        StatsCard(title = "What Happens After") {
+                            val matrix =
+                                if (changesOnly) stats.transitionChangesMatrix else stats.transitionMatrix
+                            if (matrix.axis.none { it != null }) {
+                                Text(
+                                    if (changesOnly) {
+                                        "No changes of activity in this range"
+                                    } else {
+                                        "Nothing logged in this range"
+                                    }, color = TextColour
+                                )
+                            } else {
+                                StatsChipRow(
+                                    options = listOf(true, false),
+                                    selected = normalized,
+                                    label = {
+                                        when (it) {
+                                            true -> "% next"
+                                            false -> "Hours"
+                                        }
+                                    },
+                                    onSelect = viewModel::setStatsNormalize
+                                )
+                                StatsChipRow(
+                                    options = listOf(false, true),
+                                    selected = changesOnly,
+                                    label = {
+                                        when (it) {
+                                            false -> "All hours"
+                                            true -> "Changes only"
+                                        }
+                                    },
+                                    onSelect = viewModel::setStatsChangesOnly
+                                )
+                                Text(
+                                    text = "Rows are this hour, columns are the hour after",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontStyle = FontStyle.Italic,
+                                    color = TextColour
+                                )
+                                ActivityMatrixGrid(
+                                    matrix = matrix,
+                                    normalised = normalized
+                                )
+                                SwatchLegend(transitionLegend(matrix.axis))
+                                Text(
+                                    text = transitionCaption(stats.daysInRange, filter.dayType),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontStyle = FontStyle.Italic,
+                                    color = TextColour
+                                )
+                            }
+                        }
+                    } // END Transitions
+                }
             }
         }
     }
@@ -472,7 +614,6 @@ private fun sleepCaption(nights: Int?, dayType: DayType): String {
 // nights: the Weekends chip means Sat/Sun here but Fri/Sat nights on the sleep chart, and saying
 // which is what stops the two from looking like they disagree.
 private fun rhythmCaption(days: Int, dayType: DayType): String {
-    val dayWord = if (days == 1) "day" else "days"
     return "Each column is one hour of the day, ${acrossDays(days, dayType)}"
 }
 
@@ -494,6 +635,27 @@ private fun gapCaption(normalized: Boolean, days: Int, dayType: DayType, hasUnpl
 // chart ignores the window chips, and without saying so it looks broken when they don't move it.
 private fun shareCaption(dayType: DayType): String =
     "Each week's share of its hours, since your first log${dayNamesSuffix(dayType, dayType.dayList)}"
+
+private fun shareReadout(label: String, share: Float?, weekStart: LocalDate): String {
+    val month = weekStart.month.getDisplayName(DateTextStyle.SHORT, Locale.getDefault())
+    val year = if (weekStart.year != LocalDate.now().year) " ${weekStart.year}" else ""
+    val week = "the week of $month ${weekStart.dayOfMonth}$year"
+    val percent = when {
+        share == null -> return "$label · no hours in $week"
+        share > 0f && share < 0.005f -> "<1%"
+        else -> "${(share * 100).roundToInt()}%"
+    }
+    return "$label · $percent of $week"
+}
+
+private fun sleepReadout(day: DayOfWeek, night: SleepAverage?, is24Hour: Boolean): String {
+    val name = day.getDisplayName(DateTextStyle.FULL, Locale.getDefault())
+    if (night == null) return "No $name nights in this range"
+    val bed = formatClockLabel(night.bedMinuteOfDay, is24Hour)
+    val wake = formatClockLabel(night.wakeMinuteOfDay, is24Hour)
+    val nights = if (night.nights == 1) "1 night" else "${night.nights} nights"
+    return "$name night · bed $bed · wake $wake · ${formatDurationLabel(night.hours)} asleep, averaged over $nights"
+}
 
 // " · Fri, Sat", or nothing under All days. The one home for how every caption names the
 // days it covers; each caption passes the list it was filtered by (days, or nights for sleep).

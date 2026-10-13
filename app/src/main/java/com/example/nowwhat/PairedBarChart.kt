@@ -26,11 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.nowwhat.ui.theme.GHOST_ALPHA
 import com.example.nowwhat.ui.theme.TextColour
-
-// The ghost's transparency, shared by the chart and its key so the two can't drift apart.
-// (SleepBarChart's plannedAlpha is the same 0.28f, kept separately in that file.)
-private const val GHOST_ALPHA = 0.28f
 
 // One row of the chart. Generic on purpose: "ghost" and "solid" describe how each value is
 // drawn, not what it means. The screen decides that ghost = planned and solid = actual.

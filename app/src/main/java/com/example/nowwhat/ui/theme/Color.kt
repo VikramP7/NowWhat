@@ -92,5 +92,8 @@ val LightActivityColours: List<Int> = listOf(
     Purple.toArgb()
 )
 
+// How faint a "ghost" bar is: the planned bars in SleepBarChart, the ghost bars and key in
+// PairedBarChart. One value, so the app's planned treatment can't drift between charts.
+const val GHOST_ALPHA = 0.28f
 val UnloggedColour = Color(0xFF4A4A4A)
 val OrphanedColour = Color(0xFF6E5A5A)

@@ -139,18 +139,6 @@ fun EntryPanel(
         Text(text = "Tap any hour above to edit it.", color = TextColour)
 
         Spacer(Modifier.height(8.dp))
-        ActivityLegend(activityList=activityList)
+        ActivityLegend(activityList=activityList, wrap = false)
     }
-}
-
-@Preview
-@Composable
-fun EntryPanelPreview() {
-    val activities = listOf(
-        Activity("Work", 0xFF003459.toInt(), id = 1),
-        Activity("Sleep", 0xFFE55934.toInt(), id = 2),
-        Activity("Gym", 0xFF00A7E1.toInt(), id = 3),
-        Activity("Social", 0xFFE55934.toInt(), id = 4),
-        Activity("Dating", 0xFFF48FB1.toInt(), id = 5)
-    )
 }
