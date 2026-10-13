@@ -8,7 +8,7 @@ A personal Android app for tracking how you actually spend each hour of your day
 
 Every hour, on the hour, NowWhat asks two questions: **what did you just do, and what will you do next?** You answer by tapping one of your own preset activities (Work, Sleep, Gym, Social…), each with its own colour. Over time your answers become a colour-coded map of your days, and a statistics page that shows where your hours really go and how often your plans matched reality.
 
-**Contents:** [What's new](#whats-new-in-this-release) · [Features](#features-at-a-glance) · [A tour of the app](#a-tour-of-the-app) · [Installing](#installing) · [Getting started](#getting-started) · [Under the hood](#under-the-hood) · [Status and roadmap](#status-and-roadmap)
+**Contents:** [What's new](#whats-new-in-this-release) · [Features](#features-at-a-glance) · [Installing](#installing) · [Getting started](#getting-started) · [A tour of the app](#a-tour-of-the-app) · [Under the hood](#under-the-hood) · [Status and roadmap](#status-and-roadmap)
 
 ---
 
@@ -51,6 +51,31 @@ This release also includes a polish pass over the whole screen:
 - **A day that starts when you want,** so late nights stay with the evening they belong to.
 - **12- or 24-hour time,** and **light and dark themes** that follow your phone.
 - **Backup and restore** to a single file you control. No account, no cloud, no tracking.
+
+---
+
+## Installing
+
+NowWhat isn't on the Play Store; it installs as a standalone APK. To try it on an Android phone (Android 8.0 / API 26 or newer):
+
+1. Download the latest `NowWhat.apk` from the [Releases](../../releases) page of this repository.
+2. Copy it to the phone, or download it directly on the device.
+3. Open the file. Android will ask permission to install from this source: allow "Install unknown apps" for whichever app you used to open it (your browser or file manager), then confirm the install.
+4. Open NowWhat. On first launch it asks for notification permission; grant it so the hourly prompts can appear.
+
+To build the APK yourself:
+
+1. Open the project in Android Studio and let Gradle sync.
+2. Run **Build → Build App Bundle(s) / APK(s) → Build APK(s)**, or from a terminal in the project root run `./gradlew assembleDebug`.
+3. The APK lands at `app/build/outputs/apk/debug/app-debug.apk`. This debug build is signed with the local debug key and installs directly, which is all that's needed for sharing a demo. A Play Store submission would instead need a signed release build (see Android Studio's **Build → Generate Signed Bundle / APK** wizard).
+
+## Getting started
+
+1. **Set up your activities.** Go to **Settings → Edit Activities**. NowWhat starts with Work, Sleep, Gym, Social and Dating; rename, recolour, add or delete as you like.
+2. **Choose when your day starts.** If you're often up past midnight, **Day Starts At** keeps those late hours with the evening they belong to.
+3. **Optionally, set a weekly schedule** under **Edit Default Schedule**, so each day's plan fills itself in.
+4. **Answer the hourly notifications,** or tap hours on the main screen and use the panel at the bottom.
+5. **After a week or two, open Statistics.** On the sleep card, pick which activity means sleep.
 
 ---
 
@@ -184,31 +209,6 @@ The settings page is a list of rows:
 ### Backing up your data
 
 Everything NowWhat knows lives on your phone. **Settings → Export/Import Data** saves it all to one file wherever you choose, and can restore from that file later. Importing *replaces* what's currently in the app rather than merging with it, and you're asked to confirm first.
-
----
-
-## Installing
-
-NowWhat isn't on the Play Store; it installs as a standalone APK. To try it on an Android phone (Android 8.0 / API 26 or newer):
-
-1. Download the latest `NowWhat.apk` from the [Releases](../../releases) page of this repository.
-2. Copy it to the phone, or download it directly on the device.
-3. Open the file. Android will ask permission to install from this source: allow "Install unknown apps" for whichever app you used to open it (your browser or file manager), then confirm the install.
-4. Open NowWhat. On first launch it asks for notification permission; grant it so the hourly prompts can appear.
-
-To build the APK yourself:
-
-1. Open the project in Android Studio and let Gradle sync.
-2. Run **Build → Build App Bundle(s) / APK(s) → Build APK(s)**, or from a terminal in the project root run `./gradlew assembleDebug`.
-3. The APK lands at `app/build/outputs/apk/debug/app-debug.apk`. This debug build is signed with the local debug key and installs directly, which is all that's needed for sharing a demo. A Play Store submission would instead need a signed release build (see Android Studio's **Build → Generate Signed Bundle / APK** wizard).
-
-## Getting started
-
-1. **Set up your activities.** Go to **Settings → Edit Activities**. NowWhat starts with Work, Sleep, Gym, Social and Dating; rename, recolour, add or delete as you like.
-2. **Choose when your day starts.** If you're often up past midnight, **Day Starts At** keeps those late hours with the evening they belong to.
-3. **Optionally, set a weekly schedule** under **Edit Default Schedule**, so each day's plan fills itself in.
-4. **Answer the hourly notifications,** or tap hours on the main screen and use the panel at the bottom.
-5. **After a week or two, open Statistics.** On the sleep card, pick which activity means sleep.
 
 ---
 
