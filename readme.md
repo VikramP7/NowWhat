@@ -35,9 +35,8 @@ This release also includes a polish pass over the whole screen:
 - **Tidier legends.** They wrap onto extra lines instead of scrolling, and every swatch on the page is the same rounded square.
 - **Headline numbers that fit.** Values shrink to fit their card rather than being cut off, so "100/120" days tracked reads in full.
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
+
 <img src="./pics/Statistics_Overview.png" width="40%" alt="The top of the statistics screen: filter chips, headline cards and the donut">
--->
 
 ---
 
@@ -59,9 +58,7 @@ This release also includes a polish pass over the whole screen:
 
 ### The main screen
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/MainScreen_Grid.png" width="40%" alt="The hours grid, with planned outlines and actual fills">
--->
 
 The main screen is a scrolling list of your days, newest first. Each day is split into four rows (Morning, Day, Evening and Night), with one box per hour.
 
@@ -69,9 +66,7 @@ Every box tells you two things at once. **Its outline is the activity you planne
 
 ### Logging an hour
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/MainScreen_EntryPanel.png" width="40%" alt="The entry panel with planned and actual buttons">
--->
 
 Tap any hour to select it, then use the panel at the bottom of the screen:
 
@@ -82,9 +77,8 @@ A colour legend underneath reminds you which colour is which activity, and an **
 
 ### Notifications
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
+
 <img src="./pics/Notification_Hourly.png" width="40%" alt="The hourly notification with activity buttons">
--->
 
 At the top of every hour, NowWhat asks what you did in the hour that just ended (for example, "What did you just do from 2pm - 3pm?"). The notification carries up to three activity buttons, so a single tap logs the hour without opening the app. The suggestions come from what you planned for that hour, then from what you did the hour before.
 
@@ -92,10 +86,10 @@ You can turn notifications off entirely, or set a **do-not-disturb window** (by 
 
 ### Daily notes
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
-<img src="./pics/Notes_Dialog.png" width="40%" alt="The daily synopsis dialog">
+
+<img src="./pics/Notes_Dialog.png" width="40%" alt="The daily synopsis dialog">  
+
 <img src="./pics/Notification_Synopsis.png" width="40%" alt="The synopsis notification with an inline reply field">
--->
 
 Each day can have a one-line **synopsis**, a short diary entry for the day as a whole. Tap the note icon in a day's header to write or edit it. The icon is filled when a day has a note and outlined when it doesn't.
 
@@ -105,9 +99,7 @@ All your notes are also listed together, newest first, under **Settings → Edit
 
 ### Your weekly schedule
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Settings_DefaultSchedule.png" width="40%" alt="The default schedule editor">
--->
 
 If your weeks follow a pattern, set it up once under **Settings → Edit Default Schedule**. Pick a weekday, then fill in its hours the same way you'd plan them on the main screen. Each new day starts with that weekday's plan already filled in.
 
@@ -115,9 +107,7 @@ The schedule only ever fills *empty* plans. It never overwrites a plan you've se
 
 ### Statistics
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Statistics_Filters.png" width="40%" alt="The pinned filter chips and headline cards">
--->
 
 **Settings → See Statistics** opens a page of charts. Two rows of filter chips are pinned at the top:
 
@@ -130,25 +120,19 @@ Each chart is described below. Most follow both filters; the few exceptions are 
 
 #### Where Your Time Went
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Statistics_Donut.png" width="40%" alt="The donut chart with one slice selected">
--->
 
 A donut showing your total hours and percentage for each activity. Unlogged hours, and hours logged to an activity you've since deleted, get slices of their own, so the ring accounts for every hour. Tap a slice or its legend row to highlight it, and tap again to clear.
 
 #### Plan vs Actual
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Statistics_PlanVsActual.png" width="40%" alt="The plan-versus-actual matrix">
--->
 
 A grid with your plans as rows and what actually happened as columns, so the diagonal is "went to plan." It can show percentages of each plan or raw hours. The headline above it is your **adherence**: of the hours that had both a plan and a log, the share that matched.
 
 #### Sleep
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Statistics_Sleep.png" width="40%" alt="The sleep chart with floating bars">
--->
 
 Choose which activity means sleep, and NowWhat finds your nights: runs of sleep hours, with short naps ignored. Each weekday gets a floating bar running from your average bedtime down to your average waketime. Faint wide bars behind them show what you *planned*, and dashed lines mark the averages. Tap a night to highlight it and read its averages: bedtime, waketime and hours slept. Three cards underneath give your overall average bedtime, sleep length and waketime.
 
@@ -156,17 +140,13 @@ This chart follows the time period but not the type of day, since its bars are a
 
 #### Day Rhythm
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Statistics_DayRhythm.png" width="40%" alt="The day rhythm stacked columns">
--->
 
 Twenty-four columns, one per hour of the day, each showing what that hour usually holds. The first column is the hour your day starts.
 
 #### Portion of Time
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Statistics_PortionOfTime.png" width="40%" alt="The portion-of-time line chart with a line selected">
--->
 
 One line per activity, showing each week's share of its hours, all the way back to your first log. It shows about twelve weeks at a time and scrolls back through the rest. Tap a line (or its legend entry) to highlight it and read its exact share for that week, for example "Work · 23% of the week of Sep 14."
 
@@ -174,26 +154,20 @@ This chart follows the type of day but not the time period, because it's always 
 
 #### Aspiration Gap
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Statistics_AspirationGap.png" width="40%" alt="The aspiration gap paired bars">
--->
 
 One row per activity, comparing the hours you planned for it (a wide, faint bar) with the hours you actually spent (a narrow, solid bar on top). A solid bar that stops short means less than planned; one that runs past means more. You can view it as raw hours or as a percentage of plan.
 
 #### What Happens After
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Statistics_WhatHappensAfter.png" width="40%" alt="The transition matrix">
--->
 
 A grid in the same shape as Plan vs Actual, but with *this* hour's activity as the rows and the *next* hour's as the columns, so a row reads "after Gym, the next hour was Work 60% of the time." **Changes only** hides the stays (Sleep → Sleep and so on) and shows just the moments you switched activity.
 
 ### Settings
 
-<!-- SCREENSHOT: uncomment once the file is in ./pics
 <img src="./pics/Settings.png" width="40%" alt="The settings list">
 <img src="./pics/Settings_Activities.png" width="40%" alt="The activities editor">
--->
 
 The settings page is a list of rows:
 
