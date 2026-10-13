@@ -14,3 +14,5 @@
 .cxx
 local.properties
 pics/AI_HANDOFF.md
+*.jks
+*.keystore
