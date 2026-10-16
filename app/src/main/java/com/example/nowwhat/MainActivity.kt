@@ -45,6 +45,8 @@ class MainActivity : ComponentActivity() {
                     back?.let { screenState.value = it }
                 }
 
+                LaunchPermissionPrompts()
+
                 when(screenState.value){
                     AppScreenState.MAIN -> NowWhatScreen(
                         viewModel = viewModel,

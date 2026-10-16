@@ -1,4 +1,4 @@
-*<div align="right"> Vikram Procter | October 12, 2026 </div>*
+*<div align="right"> Vikram Procter | October 16, 2026 </div>*
 
 # NowWhat? - README
 
@@ -13,6 +13,16 @@ Every hour, on the hour, NowWhat asks two questions: **what did you just do, and
 ---
 
 ## What's new in this release
+
+**Version 2.1 fixes hourly notifications on fresh installs.** On recent versions of Android, a newly installed app isn't allowed to set exact alarms until you give it the **Alarms & reminders** permission. NowWhat's hourly reminders depend on exact alarms, so on a fresh install of 2.0 they silently never arrived. Now:
+
+- **On first launch NowWhat asks for both permissions it needs,** one after the other: notifications (a normal system dialog), then Alarms & reminders. That one has no dialog, so the app explains why it needs it and opens the right settings page for you.
+- **Notification settings show whether reminders can run.** A new **Alarms & Reminders** row reads "Allowed", or "Tap to allow" in red, and updates as soon as you come back from system settings.
+- **Reminders resume straight away** once you grant access, without reopening the app.
+
+If you installed 2.0, install 2.1 over it (no need to uninstall, and your data stays). NowWhat will ask for Alarms & reminders once on launch; allow it and the hourly notifications start again.
+
+### New in 2.0
 
 **The Statistics screen.** A new page in Settings turns your hour log into charts:
 
@@ -61,7 +71,9 @@ NowWhat isn't on the Play Store; it installs as a standalone APK. To try it on a
 1. Download the latest `NowWhat.apk` from the [Releases](../../releases) page of this repository.
 2. Copy it to the phone, or download it directly on the device.
 3. Open the file. Android will ask permission to install from this source: allow "Install unknown apps" for whichever app you used to open it (your browser or file manager), then confirm the install.
-4. Open NowWhat. On first launch it asks for notification permission; grant it so the hourly prompts can appear.
+4. Open NowWhat. On first launch it asks for two permissions: **notifications**, then **Alarms & reminders** (it opens that settings page for you; switch it on and press back). Both are needed for the hourly prompts. You can check or fix the second one later under **Settings → Notifications → Alarms & Reminders**.
+
+**Updating:** install the new APK over the old one. There's no need to uninstall first, and uninstalling would delete your data unless you've exported a backup.
 
 To build the APK yourself:
 
@@ -108,6 +120,8 @@ A colour legend underneath reminds you which colour is which activity, and an **
 At the top of every hour, NowWhat asks what you did in the hour that just ended (for example, "What did you just do from 2pm - 3pm?"). The notification carries up to three activity buttons, so a single tap logs the hour without opening the app. The suggestions come from what you planned for that hour, then from what you did the hour before.
 
 You can turn notifications off entirely, or set a **do-not-disturb window** (by default 10pm to 7am) during which they stay quiet.
+
+The hourly prompts need Android's **Alarms & reminders** permission as well as the notification permission. NowWhat asks for it on launch, and the **Alarms & Reminders** row in notification settings shows whether it's allowed; if it says "Tap to allow", tap it to open the right settings page.
 
 ### Daily notes
 
@@ -202,7 +216,7 @@ The settings page is a list of rows:
 - **Edit Default Schedule:** your weekly plan.
 - **Day Starts At:** the hour your day begins (6am by default).
 - **24-Hour Time:** switches every time in the app between 12- and 24-hour format.
-- **Notifications:** the master switch, the do-not-disturb window, and the daily synopsis reminder.
+- **Notifications:** the master switch, whether Alarms & reminders is allowed, the do-not-disturb window, and the daily synopsis reminder.
 - **Export/Import Data:** back up or restore everything.
 - **Danger Zone:** clear logged hours, delete all notes, reset activities or clear the schedule. Each action asks you to confirm first.
 
@@ -239,6 +253,8 @@ A day with a note but no logged hours still gets a row in the hours view: the da
 Hourly notifications fire on the hour using exact alarms. The engine is a **self-rescheduling one-shot alarm**: an exact alarm fires into `AlarmReceiver`, which immediately schedules the next hour's alarm before doing anything else (so the chain never breaks), then handles seeding and the notification. A `BootReceiver` reschedules on device restart, since Android clears alarms on reboot.
 
 The inline action buttons log the *actual* activity for the hour that just passed via `NotificationActionReceiver`, which writes to Room directly and dismisses the notification. Suggestions come from the planned activity for that hour, then what you did the hour before, then a default, deduplicated and always at least one. The notification is deliberately **log-only**: with at most three buttons, planning the next hour from the shade isn't wanted.
+
+**Permissions.** The engine needs two separate grants. `POST_NOTIFICATIONS` is a normal runtime permission with a system dialog. Exact alarms (`SCHEDULE_EXACT_ALARM`, "Alarms & reminders") are *special access*: on Android 14+ they start denied for a fresh install, and there's no dialog, only a settings page reached through `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM`. Without that access `scheduleNextAlarm` can't set anything, so `PermissionPrompts.kt` asks for both on launch (notifications first, then an explainer that opens the settings page), and the Notifications settings screen shows the alarm access as a status row that re-checks every time the screen resumes. When access is granted, Android sends `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`; `BootReceiver` listens for it alongside `BOOT_COMPLETED` and restarts the chain immediately. The two checks live in `NotificationHelper` (`hasNotificationPermission`, `canScheduleExactAlarms`), so every caller asks the same question the same way.
 
 When notifications are off, or the current hour falls inside the do-not-disturb window, the alarm still reschedules but skips posting, so silencing never breaks the chain. The day-change seed runs *before* those checks, so it keeps working even when notifications are silenced. The DND check reuses `withinHourSpan` from `DayBoundry.kt`, so windows that cross midnight work.
 
@@ -286,7 +302,7 @@ Both directions go through Android's **Storage Access Framework**: the system fi
 - **Room** (SQLite) for record data (activities, hour entries, schedule, notes), processed via **KSP**; schema export enabled, with a real `@AutoMigration` in place
 - **Jetpack DataStore** (Preferences) for scalar settings
 - **ViewModel** + **Kotlin Flow** + **StateFlow** for reactive state
-- **AlarmManager** (exact alarms) + **BroadcastReceiver**s for the self-rescheduling on-the-hour notification engine, including `RemoteInput` inline reply
+- **AlarmManager** (exact alarms, with the special-access permission requested in-app) + **BroadcastReceiver**s for the self-rescheduling on-the-hour notification engine, including `RemoteInput` inline reply
 - **Storage Access Framework** + `ContentResolver` for user-driven file export/import; **`org.json`** for backup serialization
 - **Material Design 3** with a custom, system-following light/dark colour theme and vector drawable icons
 - **Compose `Canvas`** and Compose animation for hand-drawn, animated and tappable statistics charts (no charting library)
@@ -297,7 +313,7 @@ Both directions go through Android's **Storage Access Framework**: the system fi
 
 Data flows in one direction: **Entity → DAO → Database → ViewModel → Composable**, with DataStore as a parallel source for settings. Reads are exposed as reactive `Flow`s and `StateFlow`s, so the UI updates itself whenever the data changes. Events flow upward via callback lambdas (state hoisting).
 
-The **notification engine is a second entry point into the data layer**, living outside the ViewModel and Compose lifecycle. `AlarmReceiver`, `NotificationActionReceiver`, `NoteReplyReceiver` and `BootReceiver` reach Room and DataStore directly through `AppDatabase.getDatabase(context)` and `SettingsStore(context)`. `NotificationHelper` (a stateless `object`) owns channel creation, notification building and alarm scheduling.
+The **notification engine is a second entry point into the data layer**, living outside the ViewModel and Compose lifecycle. `AlarmReceiver`, `NotificationActionReceiver`, `NoteReplyReceiver` and `BootReceiver` (which reschedules on reboot and when alarm access is granted) reach Room and DataStore directly through `AppDatabase.getDatabase(context)` and `SettingsStore(context)`. `NotificationHelper` (a stateless `object`) owns channel creation, notification building and alarm scheduling.
 
 Where a rule must hold in both worlds, it's extracted into a plain top-level `suspend fun` that takes its DAO as a parameter, so the ViewModel and the receivers share one implementation:
 - `Seeding.kt` for day seeding.
@@ -311,6 +327,7 @@ Where a rule must hold in both worlds, it's extracted into a plain top-level `su
 <summary><b>UI component tree</b></summary>
 
 - `MainActivity`: holds screen state and ViewModel, wraps everything in `NowWhatTheme`, and owns the back-navigation `BackHandler`
+  - `LaunchPermissionPrompts`: the first-launch notifications dialog and Alarms & reminders explainer (draws nothing otherwise)
   - `NowWhatScreen`: owns the Scaffold with TopBar (topBar slot) and EntryPanel (bottomBar slot)
     - `TopBar`: title + settings icon
     - `HoursView`: scrollable `LazyColumn` of days with top/bottom fade effects
@@ -336,7 +353,8 @@ Where a rule must hold in both worlds, it's extracted into a plain top-level `su
       - `LineChart`: portion of time, scrolling, with selectable lines and a week marker
       - `PairedBarChart` + `PairedBarKey`: the aspiration gap and its planned/actual key
       - `SwatchLegend`: colour → name key for anything, activity or not; wraps by default and can be made selectable (`ActivityLegend` is built on it). `LegendSwatch` is the one shared swatch.
-    - `NotificationsSettingsScreen`, `DataSettingsScreen`, `DangerZoneSettingsScreen`
+    - `NotificationsSettingsScreen`: the master switch, the Alarms & Reminders status row, DND and synopsis settings
+    - `DataSettingsScreen`, `DangerZoneSettingsScreen`
     - `ConfirmDialog`: reusable destructive-confirmation dialog, shared by Danger Zone and import
     - `NoteDialog`: reusable synopsis editor, shared by the hours view and the notes screen
     - `NoteCard`: notes-list card, with the date above a three-line preview
@@ -450,5 +468,6 @@ Placeholder assumptions: the four time bands are fixed 6-hour blocks anchored at
   - One shared ghost-bar transparency.
   - Ring thickness as a fraction of the donut's size.
 - [x] **Unit tests:** JVM tests for sleep, the day rhythm, the weekly shares, the chart-line mapping and the axis fitting
+- [x] **V2.1 notification fix:** request Alarms & reminders access on launch (with an explainer), restart the alarm chain when it's granted, and show its status in notification settings, so hourly prompts work on a fresh install
 
 </details>

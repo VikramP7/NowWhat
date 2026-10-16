@@ -5,13 +5,18 @@ import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import androidx.core.app.RemoteInput
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings
+import androidx.annotation.RequiresApi
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.RemoteInput
+import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import java.time.LocalDate
 
 object NotificationHelper {
@@ -151,7 +156,7 @@ object NotificationHelper {
             .setContentText("Synopsis saved for ${LocalDate.ofEpochDay(epochDay).format(DateFormatter)}")
             .setPriority(NotificationCompat.PRIORITY_LOW)   // an acknowledgement, not a new prompt
             .setAutoCancel(true)
-            .setTimeoutAfter(3_000L)   // system clears it after 4s so you don't have to swipe
+            .setTimeoutAfter(3_000L)   // system clears it after 3s so you don't have to swipe
             .build()
 
         NotificationManagerCompat.from(context).notify(SYNOPSIS_NOTIFICATION_ID, notification)
@@ -161,8 +166,8 @@ object NotificationHelper {
         val alarmManager = context.getSystemService(AlarmManager::class.java)
 
         // Safety check — on API 31+ we need the exact alarm permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-            return   // silently skip handle this properly later
+        if (!canScheduleExactAlarms(context)) {
+            return
         }
 
         val intent = Intent(context, AlarmReceiver::class.java)
@@ -180,6 +185,28 @@ object NotificationHelper {
             AlarmManager.RTC_WAKEUP,    // real wall-clock time, wakes the device
             triggerTime,
             pendingIntent
+        )
+    }
+
+    fun canScheduleExactAlarms(context: Context): Boolean {
+        val alarmManager = context.getSystemService(AlarmManager::class.java)
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
+            alarmManager.canScheduleExactAlarms()
+        }else{
+            true
+        }
+    }
+
+    fun hasNotificationPermission(context: Context): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    fun exactAlarmSettingsIntent(context: Context): Intent {
+        return Intent(
+            Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+            "package:${context.packageName}".toUri()
         )
     }
 }

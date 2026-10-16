@@ -10,19 +10,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nowwhat.NotificationHelper.scheduleNextAlarm
 import com.example.nowwhat.ui.theme.BackgroundColour
+import com.example.nowwhat.ui.theme.DangerRed
 import com.example.nowwhat.ui.theme.TextColour
 
 @Composable
@@ -41,18 +48,21 @@ fun NotificationsSettingsScreen(
     val is24Hour by viewModel.is24Hour.collectAsState()
     val context = LocalContext.current
 
-    val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
-    } else true
+    var hasPermission by remember { mutableStateOf(NotificationHelper.hasNotificationPermission(context)) }
+    var canScheduleAlarms by remember { mutableStateOf(NotificationHelper.canScheduleExactAlarms(context)) }
+
+    // Re-check whenever this screen comes back to the front, e.g. returning from system settings.
+    LifecycleResumeEffect(Unit) {
+        hasPermission = NotificationHelper.hasNotificationPermission(context)
+        canScheduleAlarms = NotificationHelper.canScheduleExactAlarms(context)
+        onPauseOrDispose { }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        // This callback fires LATER, after the user responds to the dialog
-        if (isGranted) {
-            scheduleNextAlarm(context)
-        }
+        hasPermission = isGranted
+        if (isGranted) scheduleNextAlarm(context)
     }
 
     Scaffold(
@@ -83,6 +93,23 @@ fun NotificationsSettingsScreen(
                         uncheckedTrackColor = BackgroundColour,
                         uncheckedBorderColor = TextColour
                     )
+                )
+            }
+
+            SettingRow(
+                label = "Alarms & Reminders",
+                onClick = if (!canScheduleAlarms) {
+                    {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            context.startActivity(NotificationHelper.exactAlarmSettingsIntent(context))
+                        }
+                    }
+                } else null
+            ) {
+                Text(
+                    text = if (canScheduleAlarms) "Allowed" else "Tap to allow",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (canScheduleAlarms) TextColour else DangerRed
                 )
             }
 
