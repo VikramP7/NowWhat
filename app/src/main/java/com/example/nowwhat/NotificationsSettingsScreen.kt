@@ -2,7 +2,6 @@ package com.example.nowwhat
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nowwhat.NotificationHelper.scheduleNextAlarm
@@ -93,6 +91,26 @@ fun NotificationsSettingsScreen(
                         uncheckedTrackColor = BackgroundColour,
                         uncheckedBorderColor = TextColour
                     )
+                )
+            }
+
+            // Whether Android lets NowWhat post notifications at all. The switch
+            // above can only ask through the system dialog, and after two
+            // refusals Android stops showing it.
+            // it opens the app's notification page in system settings, which
+            // always works. LifecycleResumeEffect flips it to "Allowed" on return.
+            // Dimmed while notifications are off, when the answer doesn't matter.
+            SettingRow(
+                label = "Notification Permission",
+                enabled = notificationsEnabled,
+                onClick = if (!hasPermission) {
+                    { context.startActivity(NotificationHelper.appNotificationSettingsIntent(context)) }
+                } else null
+            ) {
+                Text(
+                    text = if (hasPermission) "Allowed" else "Tap to allow",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (hasPermission) TextColour else DangerRed
                 )
             }
 

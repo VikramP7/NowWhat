@@ -209,4 +209,9 @@ object NotificationHelper {
             "package:${context.packageName}".toUri()
         )
     }
+
+    // The app's own notification page in system settings.
+    fun appNotificationSettingsIntent(context: Context): Intent =
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
 }
