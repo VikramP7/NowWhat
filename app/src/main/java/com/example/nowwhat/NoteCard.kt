@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.nowwhat.ui.theme.BoxFillGrey
@@ -27,11 +28,15 @@ import com.example.nowwhat.ui.theme.TextColour
  * One entry in the Notes list: date on top, a 3-line preview underneath.
  * Same card shell as SettingRow (shape, shadow, fill) so it feels like part
  * of Settings, but a Column instead of a Row so the text gets room to wrap.
+ *
+ * Takes AnnotatedStrings so the caller can style parts of the text (search
+ * highlights). The card still knows nothing about searching: a plain label
+ * is just AnnotatedString(label).
  */
 @Composable
 fun NoteCard(
-    dateLabel: String,
-    text: String,
+    dateLabel: AnnotatedString,
+    text: AnnotatedString,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
