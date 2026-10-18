@@ -7,7 +7,7 @@ import android.content.Intent
 import com.example.nowwhat.NotificationHelper.scheduleNextAlarm
 
 @SuppressLint("MissingPermission")
-class  BootReceiver : BroadcastReceiver() {
+class AlarmRescheduleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         scheduleNextAlarm(context)
     }

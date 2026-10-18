@@ -8,6 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -32,7 +33,8 @@ fun NowWhatScreen(
     val is24Hour by viewModel.is24Hour.collectAsState()
     val dayStartHour by viewModel.dayStartHour.collectAsState()
 
-    var noteDayDialog by remember { mutableStateOf<Day?>(null) }
+    var noteDialogEpochDay by rememberSaveable() { mutableStateOf<Long?>(null) }
+    val noteDialogDay = days.find {day -> day.localDate.toEpochDay() == noteDialogEpochDay}
 
     Scaffold(
         modifier = modifier,
@@ -97,16 +99,16 @@ fun NowWhatScreen(
                 viewModel.selectHour(dayIndex, hourIndex)
             },
             onNoteClick = { day ->
-                noteDayDialog = day
+                noteDialogEpochDay = day.localDate.toEpochDay()
             }
         )
 
-        noteDayDialog?.let { day ->
+        noteDialogDay?.let { day ->
             NoteDialog(
                 title = day.date,
                 initialText = day.note.orEmpty(),
                 onSave = {noteText -> viewModel.saveNote(day.localDate.toEpochDay(), noteText)},
-                onDismiss = {noteDayDialog = null}
+                onDismiss = {noteDialogEpochDay = null}
             )
         }
     }

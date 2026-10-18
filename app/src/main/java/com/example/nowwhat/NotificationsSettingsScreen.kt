@@ -48,11 +48,15 @@ fun NotificationsSettingsScreen(
 
     var hasPermission by remember { mutableStateOf(NotificationHelper.hasNotificationPermission(context)) }
     var canScheduleAlarms by remember { mutableStateOf(NotificationHelper.canScheduleExactAlarms(context)) }
+    // Can NowWhat actually post? Differs from hasPermission only below Android 13,
+    // where there's no permission but the user can still switch notifications off.
+    var notificationsAllowed by remember { mutableStateOf(NotificationHelper.notificationsAllowed(context)) }
 
     // Re-check whenever this screen comes back to the front, e.g. returning from system settings.
     LifecycleResumeEffect(Unit) {
         hasPermission = NotificationHelper.hasNotificationPermission(context)
         canScheduleAlarms = NotificationHelper.canScheduleExactAlarms(context)
+        notificationsAllowed = NotificationHelper.notificationsAllowed(context)
         onPauseOrDispose { }
     }
 
@@ -60,6 +64,7 @@ fun NotificationsSettingsScreen(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         hasPermission = isGranted
+        notificationsAllowed = NotificationHelper.notificationsAllowed(context)
         if (isGranted) scheduleNextAlarm(context)
     }
 
@@ -94,26 +99,6 @@ fun NotificationsSettingsScreen(
                 )
             }
 
-            // Whether Android lets NowWhat post notifications at all. The switch
-            // above can only ask through the system dialog, and after two
-            // refusals Android stops showing it.
-            // it opens the app's notification page in system settings, which
-            // always works. LifecycleResumeEffect flips it to "Allowed" on return.
-            // Dimmed while notifications are off, when the answer doesn't matter.
-            SettingRow(
-                label = "Notification Permission",
-                enabled = notificationsEnabled,
-                onClick = if (!hasPermission) {
-                    { context.startActivity(NotificationHelper.appNotificationSettingsIntent(context)) }
-                } else null
-            ) {
-                Text(
-                    text = if (hasPermission) "Allowed" else "Tap to allow",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (hasPermission) TextColour else DangerRed
-                )
-            }
-
             SettingRow(
                 label = "Alarms & Reminders",
                 onClick = if (!canScheduleAlarms) {
@@ -128,6 +113,26 @@ fun NotificationsSettingsScreen(
                     text = if (canScheduleAlarms) "Allowed" else "Tap to allow",
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (canScheduleAlarms) TextColour else DangerRed
+                )
+            }
+
+            // Whether Android lets NowWhat post notifications at all. The switch
+            // above can only ask through the system dialog, and after two
+            // refusals Android stops showing it, so this row is the way back:
+            // it opens the app's notification page in system settings, which
+            // always works. LifecycleResumeEffect flips it to "Allowed" on return.
+            // Dimmed while notifications are off, when the answer doesn't matter.
+            SettingRow(
+                label = "Notification Permission",
+                enabled = notificationsEnabled,
+                onClick = if (!notificationsAllowed) {
+                    { context.startActivity(NotificationHelper.appNotificationSettingsIntent(context)) }
+                } else null
+            ) {
+                Text(
+                    text = if (notificationsAllowed) "Allowed" else "Tap to allow",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (notificationsAllowed) TextColour else DangerRed
                 )
             }
 

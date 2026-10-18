@@ -202,6 +202,12 @@ object NotificationHelper {
                 ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
                 PackageManager.PERMISSION_GRANTED
 
+    // Whether NowWhat can actually post. On Android 13+ this is the POST_NOTIFICATIONS
+    // grant; below 13, where there's no runtime permission, it's the app's on/off
+    // toggle in system settings, which hasNotificationPermission can't see.
+    fun notificationsAllowed(context: Context): Boolean =
+        NotificationManagerCompat.from(context).areNotificationsEnabled()
+
     @RequiresApi(Build.VERSION_CODES.S)
     fun exactAlarmSettingsIntent(context: Context): Intent {
         return Intent(
