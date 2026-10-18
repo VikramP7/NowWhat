@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nowwhat.NotificationHelper.scheduleNextAlarm
 import com.example.nowwhat.ui.theme.NowWhatTheme
@@ -36,7 +37,7 @@ class MainActivity : ComponentActivity() {
         scheduleNextAlarm(this)
         setContent {
 
-            val screenState = remember { mutableStateOf(AppScreenState.MAIN)}
+            val screenState = rememberSaveable { mutableStateOf(AppScreenState.MAIN)}
             val viewModel: NowWhatViewModel = viewModel()
 
             NowWhatTheme {
