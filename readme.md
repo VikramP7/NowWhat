@@ -1,4 +1,4 @@
-*<div align="right"> Vikram Procter | October 16, 2026 </div>*
+*<div align="right"> Vikram Procter | October 18, 2026 </div>*
 
 # NowWhat? - README
 
@@ -14,13 +14,24 @@ Every hour, on the hour, NowWhat asks two questions: **what did you just do, and
 
 ## What's new in this release
 
+**Version 2.2 makes your notes searchable.** **Settings → Edit Notes** now has a search bar pinned above the list:
+
+- **Search as you type.** The list narrows with every letter, matching each note's text and its date, so "dentist", "Friday" and "Sep" all work. Case doesn't matter.
+- **See why a note matched.** Every match is highlighted, in the note and in its date.
+- **Previews jump to the match.** When a match is further into a long note, the preview starts just before it (with "…" to show text was skipped), so it's always visible in the card. Several matches far apart each get their own snippet.
+
+Also in this release:
+
+- **A Notification Permission row** in notification settings, beside Alarms & Reminders. It reads "Allowed", or "Tap to allow" in red, which opens NowWhat's notification page in system settings. That matters once you've declined the notifications dialog twice: Android then stops showing it, and this row is the way back.
+- **Screens keep their place.** Rotating the phone or switching between light and dark mode used to send you back to the main screen. Now you stay where you were, and an open note keeps what you've typed.
+
+Install 2.2 over any earlier version (no need to uninstall, and your data stays).
+
+### New in 2.1
+
 **Version 2.1 fixes hourly notifications on fresh installs.** On recent versions of Android, a newly installed app isn't allowed to set exact alarms until you give it the **Alarms & reminders** permission. NowWhat's hourly reminders depend on exact alarms, so on a fresh install of 2.0 they silently never arrived. Now:
 
-- **On first launch NowWhat asks for both permissions it needs,** one after the other: notifications (a normal system dialog), then Alarms & reminders. That one has no dialog, so the app explains why it needs it and opens the right settings page for you.
-- **Notification settings show whether reminders can run.** A new **Alarms & Reminders** row reads "Allowed", or "Tap to allow" in red, and updates as soon as you come back from system settings.
-- **Reminders resume straight away** once you grant access, without reopening the app.
-
-If you installed 2.0, install 2.1 over it (no need to uninstall, and your data stays). NowWhat will ask for Alarms & reminders once on launch; allow it and the hourly notifications start again.
+If you're coming from 2.0, NowWhat will ask for Alarms & reminders on launch; allow it and the hourly notifications start again.
 
 ### New in 2.0
 
@@ -55,7 +66,7 @@ This release also includes a polish pass over the whole screen:
 - **An hour-by-hour grid** of your days. Each hour is outlined in the colour of what you *planned* and filled with the colour of what you *actually* did, so you see plans and reality together.
 - **Hourly notifications** with one-tap buttons, so you can log the hour that just passed without opening the app.
 - **A default weekly schedule** that pre-fills each new day's plan.
-- **A daily synopsis:** one short diary line per day, written in the app or straight from a notification.
+- **A daily synopsis:** one short diary line per day, written in the app or straight from a notification, and searchable.
 - **A statistics page** with seven charts and two filters.
 - **Your own activities,** with your own names and colours.
 - **A day that starts when you want,** so late nights stay with the evening they belong to.
@@ -71,7 +82,7 @@ NowWhat isn't on the Play Store; it installs as a standalone APK. To try it on a
 1. Download the latest `NowWhat.apk` from the [Releases](../../releases) page of this repository.
 2. Copy it to the phone, or download it directly on the device.
 3. Open the file. Android will ask permission to install from this source: allow "Install unknown apps" for whichever app you used to open it (your browser or file manager), then confirm the install.
-4. Open NowWhat. On first launch it asks for two permissions: **notifications**, then **Alarms & reminders** (it opens that settings page for you; switch it on and press back). Both are needed for the hourly prompts. You can check or fix the second one later under **Settings → Notifications → Alarms & Reminders**.
+4. Open NowWhat. On first launch it asks for two permissions: **notifications**, then **Alarms & reminders** (it opens that settings page for you; switch it on and press back). Both are needed for the hourly prompts. You can check or fix either one later under **Settings → Notifications**, in the **Notification Permission** and **Alarms & Reminders** rows.
 
 **Updating:** install the new APK over the old one. There's no need to uninstall first, and uninstalling would delete your data unless you've exported a backup.
 
@@ -121,7 +132,7 @@ At the top of every hour, NowWhat asks what you did in the hour that just ended 
 
 You can turn notifications off entirely, or set a **do-not-disturb window** (by default 10pm to 7am) during which they stay quiet.
 
-The hourly prompts need Android's **Alarms & reminders** permission as well as the notification permission. NowWhat asks for it on launch, and the **Alarms & Reminders** row in notification settings shows whether it's allowed; if it says "Tap to allow", tap it to open the right settings page.
+The hourly prompts need Android's **Alarms & reminders** permission as well as the notification permission. NowWhat asks for both on launch, and two rows in notification settings, **Notification Permission** and **Alarms & Reminders**, show whether each is allowed. If either says "Tap to allow", tap it to open the right settings page.
 
 ### Daily notes
 
@@ -134,7 +145,7 @@ Each day can have a one-line **synopsis**, a short diary entry for the day as a 
 
 Once a day, at a time you choose (9pm by default), a second notification asks for that day's synopsis. You can **type it straight into the notification** and it's saved, with no need to open the app. If you've already written one, you won't be asked.
 
-All your notes are also listed together, newest first, under **Settings → Edit Notes**.
+All your notes are also listed together, newest first, under **Settings → Edit Notes**, with a search bar at the top. Type a word and the list narrows to the notes containing it, in their text or their date ("Friday", "Sep"). Matches are highlighted, and when a match is further into a long note the preview skips ahead to it, marked with "…", so you can always see why a note is there. Tap a note to open and edit it as usual.
 
 ### Your weekly schedule
 
@@ -211,12 +222,12 @@ A grid in the same shape as Plan vs Actual, but with *this* hour's activity as t
 The settings page is a list of rows:
 
 - **See Statistics:** the charts above.
-- **Edit Notes:** browse and edit every daily synopsis.
+- **Edit Notes:** browse, search and edit every daily synopsis.
 - **Edit Activities:** add, rename, recolour or delete activities.
 - **Edit Default Schedule:** your weekly plan.
 - **Day Starts At:** the hour your day begins (6am by default).
 - **24-Hour Time:** switches every time in the app between 12- and 24-hour format.
-- **Notifications:** the master switch, whether Alarms & reminders is allowed, the do-not-disturb window, and the daily synopsis reminder.
+- **Notifications:** the master switch, whether notifications and Alarms & reminders are allowed, the do-not-disturb window, and the daily synopsis reminder.
 - **Export/Import Data:** back up or restore everything.
 - **Danger Zone:** clear logged hours, delete all notes, reset activities or clear the schedule. Each action asks you to confirm first.
 
@@ -248,13 +259,24 @@ Notes are keyed by **logical day** (`LocalDate.toEpochDay()`), not by a timestam
 
 A day with a note but no logged hours still gets a row in the hours view: the days to display are the union of days with entries, days with notes, and today.
 
+### Searching notes
+
+All the search rules live in `TextSearch.kt`, which has no Android or Compose imports, like `Statistics.kt`. Two functions:
+
+- **`matchRanges(text, query)`** is the one definition of a match: every case-insensitive, non-overlapping occurrence, as index ranges. An empty query matches nothing (an empty string would otherwise "match" at every position, forever). The filter, the highlight and the preview all call it, so they can't disagree about what matched.
+- **`searchPreview(text, query)`** builds the card's preview. Around each match it keeps about 30 characters before and 8 after, rounded out to whole words, and marks each skipped stretch with "…". A segment never starts after its own match, matches that fall inside an earlier segment extend it rather than starting a new one, and the rest of the note follows the last segment so the card's three lines stay full. A note whose matches are all near the start is shown unchanged.
+
+The screen trims the query before using it, but stores it exactly as typed (trimming on every keystroke would swallow each space as it's typed). A note matches if its text or its date label does, using the same label the card shows, so what you can search is what you can see. The highlight is built by `highlightMatches` as an `AnnotatedString`, re-running `matchRanges` on the preview itself, so no indexes need shifting. `NoteCard` takes `AnnotatedString`s and knows nothing about searching. The highlight colour is a faint tint of the text colour, so it needs no separate light and dark values.
+
+The preview works in characters rather than measuring the card's three lines at layout time: simpler, and close enough on any phone width.
+
 ### Notifications
 
-Hourly notifications fire on the hour using exact alarms. The engine is a **self-rescheduling one-shot alarm**: an exact alarm fires into `AlarmReceiver`, which immediately schedules the next hour's alarm before doing anything else (so the chain never breaks), then handles seeding and the notification. A `BootReceiver` reschedules on device restart, since Android clears alarms on reboot.
+Hourly notifications fire on the hour using exact alarms. The engine is a **self-rescheduling one-shot alarm**: an exact alarm fires into `AlarmReceiver`, which immediately schedules the next hour's alarm before doing anything else (so the chain never breaks), then handles seeding and the notification. An `AlarmRescheduleReceiver` reschedules on device restart, since Android clears alarms on reboot.
 
 The inline action buttons log the *actual* activity for the hour that just passed via `NotificationActionReceiver`, which writes to Room directly and dismisses the notification. Suggestions come from the planned activity for that hour, then what you did the hour before, then a default, deduplicated and always at least one. The notification is deliberately **log-only**: with at most three buttons, planning the next hour from the shade isn't wanted.
 
-**Permissions.** The engine needs two separate grants. `POST_NOTIFICATIONS` is a normal runtime permission with a system dialog. Exact alarms (`SCHEDULE_EXACT_ALARM`, "Alarms & reminders") are *special access*: on Android 14+ they start denied for a fresh install, and there's no dialog, only a settings page reached through `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM`. Without that access `scheduleNextAlarm` can't set anything, so `PermissionPrompts.kt` asks for both on launch (notifications first, then an explainer that opens the settings page), and the Notifications settings screen shows the alarm access as a status row that re-checks every time the screen resumes. When access is granted, Android sends `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`; `BootReceiver` listens for it alongside `BOOT_COMPLETED` and restarts the chain immediately. The two checks live in `NotificationHelper` (`hasNotificationPermission`, `canScheduleExactAlarms`), so every caller asks the same question the same way.
+**Permissions.** The engine needs two separate grants. `POST_NOTIFICATIONS` is a normal runtime permission with a system dialog. Exact alarms (`SCHEDULE_EXACT_ALARM`, "Alarms & reminders") are *special access*: on Android 14+ they start denied for a fresh install, and there's no dialog, only a settings page reached through `Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM`. Without that access `scheduleNextAlarm` can't set anything, so `PermissionPrompts.kt` asks for both on launch (notifications first, then an explainer that opens the settings page), and the Notifications settings screen shows the alarm access as a status row that re-checks every time the screen resumes. When access is granted, Android sends `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`; `AlarmRescheduleReceiver` listens for it alongside `BOOT_COMPLETED` and restarts the chain immediately. The checks live in `NotificationHelper`, so every caller asks the same question the same way: `hasNotificationPermission` decides whether the system dialog is worth showing, `notificationsAllowed` (`areNotificationsEnabled()`) says whether NowWhat can actually post (below Android 13 the user can still switch an app's notifications off, with no permission involved), and `canScheduleExactAlarms` covers alarm access. The two status rows in notification settings open the matching system pages, which always work, unlike the notification dialog, which Android stops showing after two refusals.
 
 When notifications are off, or the current hour falls inside the do-not-disturb window, the alarm still reschedules but skips posting, so silencing never breaks the chain. The day-change seed runs *before* those checks, so it keeps working even when notifications are silenced. The DND check reuses `withinHourSpan` from `DayBoundry.kt`, so windows that cross midnight work.
 
@@ -313,15 +335,17 @@ Both directions go through Android's **Storage Access Framework**: the system fi
 
 Data flows in one direction: **Entity → DAO → Database → ViewModel → Composable**, with DataStore as a parallel source for settings. Reads are exposed as reactive `Flow`s and `StateFlow`s, so the UI updates itself whenever the data changes. Events flow upward via callback lambdas (state hoisting).
 
-The **notification engine is a second entry point into the data layer**, living outside the ViewModel and Compose lifecycle. `AlarmReceiver`, `NotificationActionReceiver`, `NoteReplyReceiver` and `BootReceiver` (which reschedules on reboot and when alarm access is granted) reach Room and DataStore directly through `AppDatabase.getDatabase(context)` and `SettingsStore(context)`. `NotificationHelper` (a stateless `object`) owns channel creation, notification building and alarm scheduling.
+The **notification engine is a second entry point into the data layer**, living outside the ViewModel and Compose lifecycle. `AlarmReceiver`, `NotificationActionReceiver`, `NoteReplyReceiver` and `AlarmRescheduleReceiver` (which reschedules on reboot and when alarm access is granted) reach Room and DataStore directly through `AppDatabase.getDatabase(context)` and `SettingsStore(context)`. `NotificationHelper` (a stateless `object`) owns channel creation, notification building and alarm scheduling.
 
 Where a rule must hold in both worlds, it's extracted into a plain top-level `suspend fun` that takes its DAO as a parameter, so the ViewModel and the receivers share one implementation:
 - `Seeding.kt` for day seeding.
 - `Notes.kt` for saving a synopsis (trim, and delete rather than store blank).
 
+`TextSearch.kt` follows the same instinct inside the UI: one definition of "a match", shared by the filter, the highlight and the preview.
+
 **Statistics are a pure function of the data.** The ViewModel `combine`s entries, activities, the day-start hour, the filter and the chosen sleep activity, runs `computeStatistics` off the main thread (`flowOn(Dispatchers.Default)`), and exposes the result as a `StateFlow<Statistics?>`. The screen maps it into generic chart types (`ChartSlice`, `ChartSeries`, `PairedBar`) at the UI boundary, which is also where colours are attached; `Statistics.kt` itself never touches Compose. Presentation-only choices, such as the matrix toggles and which slice or line is selected, stay out of the `combine`, so changing them never triggers a recompute.
 
-**Navigation** uses a simple state-based approach: an `AppScreenState` enum held in `MainActivity`, with a `when` expression swapping between screens. A single `BackHandler` uses an `AppScreenState.parent()` mapping to step up the tree, and on the main screen it disables itself so the back press falls through and the app closes normally.
+**Navigation** uses a simple state-based approach: an `AppScreenState` enum held in `MainActivity` with `rememberSaveable`, and a `when` expression swapping between screens. Saving it is what keeps you on the same screen when Android rebuilds the activity (rotation, a dark-mode switch, or the app being reclaimed in the background), and each screen's own saved state, such as the notes search and an open note, only comes back because its screen is drawn again. A single `BackHandler` uses an `AppScreenState.parent()` mapping to step up the tree, and on the main screen it disables itself so the back press falls through and the app closes normally.
 
 <details>
 <summary><b>UI component tree</b></summary>
@@ -342,7 +366,8 @@ Where a rule must hold in both worlds, it's extracted into a plain top-level `su
     - `NumberStepper`: reusable −/value/+ stepper with a `format` lambda
     - `ActivitiesSettingsScreen`: each activity as a `SettingRow` with a colour swatch, an inline-rename field and a delete action; keyboard-aware via `imePadding`
     - `DefaultScheduleSettingsScreen` → `WeekdayPicker` + `DaySection` + preset row
-    - `NotesSettingsScreen`: `LazyColumn` of `NoteCard`s, tap to open `NoteDialog`
+    - `NotesSettingsScreen`: a pinned `SearchField` above a `LazyColumn` of `NoteCard`s, tap to open `NoteDialog`
+      - `SearchField`: one-line search box in the card style, with a clear button; knows nothing about notes
     - `StatisticsSettingsScreen`: pinned filter chips (with a fade beneath) above a `LazyColumn` of chart cards
       - `StatsChipRow`: generic chip row for the filters and the card toggles
       - `StatsCard`: the card shell every chart sits in; `HeadlineStat`: a card with one big number that shrinks to fit
@@ -353,11 +378,11 @@ Where a rule must hold in both worlds, it's extracted into a plain top-level `su
       - `LineChart`: portion of time, scrolling, with selectable lines and a week marker
       - `PairedBarChart` + `PairedBarKey`: the aspiration gap and its planned/actual key
       - `SwatchLegend`: colour → name key for anything, activity or not; wraps by default and can be made selectable (`ActivityLegend` is built on it). `LegendSwatch` is the one shared swatch.
-    - `NotificationsSettingsScreen`: the master switch, the Alarms & Reminders status row, DND and synopsis settings
+    - `NotificationsSettingsScreen`: the master switch, the Notification Permission and Alarms & Reminders status rows, DND and synopsis settings
     - `DataSettingsScreen`, `DangerZoneSettingsScreen`
     - `ConfirmDialog`: reusable destructive-confirmation dialog, shared by Danger Zone and import
     - `NoteDialog`: reusable synopsis editor, shared by the hours view and the notes screen
-    - `NoteCard`: notes-list card, with the date above a three-line preview
+    - `NoteCard`: notes-list card, with the date above a three-line preview; takes `AnnotatedString`s so search matches can be highlighted
     - `TopBarSettings`: "Settings" title (+ optional breadcrumb path) + back icon
 
 </details>
@@ -399,7 +424,7 @@ The statistics arithmetic has local unit tests that run on the computer's JVM ra
 - `ShareSeriesTest`: turning those buckets into chart lines.
 - `ShareAxisTest`: fitting the line chart's scale.
 
-They live in `app/src/test/java/com/example/nowwhat/`. Run them from the green ▶ beside a test in Android Studio, or with `./gradlew :app:testDebugUnitTest`. Running a test under **Debug** is also the quickest way to step through the statistics code, since nothing has to be installed.
+They live in `app/src/test/java/com/example/nowwhat/`. `TextSearch.kt` is pure in the same way and its helpers are `internal`, so search tests could join them; so far its edge cases (matches at either end, mid-word queries, notes with no spaces, line breaks, close and multi-word matches) have been checked outside the repo. Run them from the green ▶ beside a test in Android Studio, or with `./gradlew :app:testDebugUnitTest`. Running a test under **Debug** is also the quickest way to step through the statistics code, since nothing has to be installed.
 
 ---
 
@@ -413,7 +438,6 @@ They live in `app/src/test/java/com/example/nowwhat/`. Run them from the green �
 - [ ] More colours for activities, or a toggle that shows each activity's first letter on the main page, so activities sharing a colour can be told apart
 - [ ] **Bug:** settings rows with controls (e.g. Day Starts At, 24-Hour Time) sit taller than the plain rows
 - [ ] Show the year in day labels when it isn't the current one, so the Notes list doesn't read ambiguously once history spans more than a year (e.g. two "Friday · Sep 11" entries)
-- [ ] Search over notes on the Notes settings screen
 - [ ] Merge-style import (currently replace-only); would need activity-ID-collision handling
 
 Placeholder assumptions: the four time bands are fixed 6-hour blocks anchored at the start hour (Morning = start, then +6/+12/+18), and the starter presets are Work, Sleep, Gym, Social, and Dating.
@@ -469,5 +493,7 @@ Placeholder assumptions: the four time bands are fixed 6-hour blocks anchored at
   - Ring thickness as a fraction of the donut's size.
 - [x] **Unit tests:** JVM tests for sleep, the day rhythm, the weekly shares, the chart-line mapping and the axis fitting
 - [x] **V2.1 notification fix:** request Alarms & reminders access on launch (with an explainer), restart the alarm chain when it's granted, and show its status in notification settings, so hourly prompts work on a fresh install
+- [x] **V2.2 notes search:** a pinned search bar on the Notes screen, matching note text and date labels, with highlighted matches and previews that skip ahead to them
+- [x] **V2.2 polish:** a Notification Permission status row that opens system settings; navigation and the notes dialog survive rotation and theme changes; `BootReceiver` renamed `AlarmRescheduleReceiver`
 
 </details>
