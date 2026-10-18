@@ -35,7 +35,8 @@ fun NotesSettingsScreen(
 ) {
 
     val notes by viewModel.notes.collectAsState()
-    var noteDialog by remember { mutableStateOf<Note?>(null) }
+    var noteDialogDay by rememberSaveable { mutableStateOf<Long?>(null) }
+    val noteDialog = notes.find { it.epochDay == noteDialogDay }
 
     // The search text. Presentation only, so it lives here rather than in
     // the ViewModel: survives rotation, resets when you leave the screen.
@@ -107,8 +108,8 @@ fun NotesSettingsScreen(
                 items(shownNotes, key = { it.epochDay }) { note ->
                     NoteCard(
                         dateLabel = highlightMatches(dateLabelOf(note), q, highlight),
-                        text = highlightMatches(note.text, q, highlight),
-                        onClick = { noteDialog = note }
+                        text = highlightMatches(searchPreview(note.text, q), q, highlight),
+                        onClick = { noteDialogDay = note.epochDay }
                     )
                 }
             }
@@ -118,7 +119,7 @@ fun NotesSettingsScreen(
                 title = dateLabelOf(note),
                 initialText = note.text,
                 onSave = { noteText -> viewModel.saveNote(note.epochDay, noteText) },
-                onDismiss = { noteDialog = null }
+                onDismiss = { noteDialogDay = null }
             )
         }
     }
