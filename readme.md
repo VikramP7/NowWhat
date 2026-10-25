@@ -1,4 +1,4 @@
-*<div align="right"> Vikram Procter | October 18, 2026 </div>*
+*<div align="right"> Vikram Procter | October 25, 2026 </div>*
 
 # NowWhat? - README
 
@@ -14,6 +14,18 @@ Every hour, on the hour, NowWhat asks two questions: **what did you just do, and
 
 ## What's new in this release
 
+**Version 2.3 makes the hour grid easier to read, and quicker to fill in.**
+
+- **Activity initials.** **Settings → Edit Activities** now opens with a **Show Initials** switch. Turn it on and every logged hour shows the first letter of what you did, in a light cream or a dark brown, whichever reads better on that colour. An hour with only a plan shows the planned activity's letter on its empty box. So Work and Study can share a colour without sharing a mystery. The activity swatches in the editor show the letter too, and update as you type a name.
+- **Sixteen colours, up from eight.** Gold, Teal, Indigo, Red, Brown, Slate, Olive and Rose join the palette. The picker is now two rows of eight, and your existing activities keep the colours they have.
+- **The cursor moves on for you.** Once an hour is complete (it has a plan, and either a log or it hasn't happened yet) the selection steps to the next hour, so you can work down the grid by tapping buttons. It stops on a day's last hour rather than wandering off the screen.
+- **The year, when it matters.** Day labels read "Friday · Sep 11 · 2026" when the date isn't in the current year, in the grid, in note dialogs and in the Notes list, where you can also search for the year.
+- **Dialogs survive rotation.** The day-note dialog on the main screen, the import confirmation and the Danger Zone confirmations stay open when you rotate the phone or switch between light and dark.
+
+Install 2.3 over any earlier version (no need to uninstall, and your data stays).
+
+### New in 2.2
+
 **Version 2.2 makes your notes searchable.** **Settings → Edit Notes** now has a search bar pinned above the list:
 
 - **Search as you type.** The list narrows with every letter, matching each note's text and its date, so "dentist", "Friday" and "Sep" all work. Case doesn't matter.
@@ -25,7 +37,6 @@ Also in this release:
 - **A Notification Permission row** in notification settings, beside Alarms & Reminders. It reads "Allowed", or "Tap to allow" in red, which opens NowWhat's notification page in system settings. That matters once you've declined the notifications dialog twice: Android then stops showing it, and this row is the way back.
 - **Screens keep their place.** Rotating the phone or switching between light and dark mode used to send you back to the main screen. Now you stay where you were, and an open note keeps what you've typed.
 
-Install 2.2 over any earlier version (no need to uninstall, and your data stays).
 
 ### New in 2.1
 
@@ -68,7 +79,7 @@ This release also includes a polish pass over the whole screen:
 - **A default weekly schedule** that pre-fills each new day's plan.
 - **A daily synopsis:** one short diary line per day, written in the app or straight from a notification, and searchable.
 - **A statistics page** with seven charts and two filters.
-- **Your own activities,** with your own names and colours.
+- **Your own activities,** with your own names, sixteen colours to choose from, and an optional first-letter initial on the grid.
 - **A day that starts when you want,** so late nights stay with the evening they belong to.
 - **12- or 24-hour time,** and **light and dark themes** that follow your phone.
 - **Backup and restore** to a single file you control. No account, no cloud, no tracking.
@@ -94,7 +105,7 @@ To build the APK yourself:
 
 ## Getting started
 
-1. **Set up your activities.** Go to **Settings → Edit Activities**. NowWhat starts with Work, Sleep, Gym, Social and Dating; rename, recolour, add or delete as you like.
+1. **Set up your activities.** Go to **Settings → Edit Activities**. NowWhat starts with Work, Sleep, Gym, Social and Dating; rename, recolour, add or delete as you like. If you end up with several activities in similar colours, switch on **Show Initials** at the top of that screen.
 2. **Choose when your day starts.** If you're often up past midnight, **Day Starts At** keeps those late hours with the evening they belong to.
 3. **Optionally, set a weekly schedule** under **Edit Default Schedule**, so each day's plan fills itself in.
 4. **Answer the hourly notifications,** or tap hours on the main screen and use the panel at the bottom.
@@ -112,6 +123,8 @@ The main screen is a scrolling list of your days, newest first. Each day is spli
 
 Every box tells you two things at once. **Its outline is the activity you planned** and **its fill is the activity you actually did**. A box outlined in amber but filled with teal means "planned to go to the gym, ended up working." A box with only an outline is a plan you haven't logged yet, and an empty box is an hour with nothing in it.
 
+With **Show Initials** on (Settings → Edit Activities), logged boxes also carry the first letter of what you did, and plan-only boxes carry the planned activity's letter, so two activities that share a colour can still be told apart.
+
 ### Logging an hour
 
 <img src="./pics/MainScreen_EntryPanel.png" width="40%" alt="The entry panel with planned and actual buttons">
@@ -122,6 +135,8 @@ Tap any hour to select it, then use the panel at the bottom of the screen:
 - **"What's happened?"** logs what you actually did. These buttons are disabled for hours that haven't happened yet.
 
 A colour legend underneath reminds you which colour is which activity, and an **Edit+** button jumps straight to your activities.
+
+When an hour is complete (it has a plan, and either a log or it's still in the future, where a plan is all it can have) the selection moves on to the next hour by itself. An hour that's missing its plan or its log stays selected, and the selection never leaves its own day, so on a day's last hour it stays put.
 
 ### Notifications
 
@@ -153,7 +168,7 @@ All your notes are also listed together, newest first, under **Settings → Edit
 
 If your weeks follow a pattern, set it up once under **Settings → Edit Default Schedule**. Pick a weekday, then fill in its hours the same way you'd plan them on the main screen. Each new day starts with that weekday's plan already filled in.
 
-The schedule only ever fills *empty* plans. It never overwrites a plan you've set by hand.
+The schedule only ever fills *empty* plans. It never overwrites a plan you've set by hand. With Show Initials on, the planned letters show here too.
 
 ### Statistics
 
@@ -223,7 +238,7 @@ The settings page is a list of rows:
 
 - **See Statistics:** the charts above.
 - **Edit Notes:** browse, search and edit every daily synopsis.
-- **Edit Activities:** add, rename, recolour or delete activities.
+- **Edit Activities:** add, rename, recolour or delete activities. The **Show Initials** switch is pinned at the top; the colour picker offers sixteen colours.
 - **Edit Default Schedule:** your weekly plan.
 - **Day Starts At:** the hour your day begins (6am by default).
 - **24-Hour Time:** switches every time in the app between 12- and 24-hour format.
@@ -247,9 +262,17 @@ Everything NowWhat knows lives on your phone. **Settings → Export/Import Data*
 
 A NowWhat "day" doesn't run midnight-to-midnight: it runs from a configurable **start hour** (default 6am) to the same time the next calendar day. The small hours after midnight (e.g. 1am) therefore belong to the *previous* logical day's "Night" band. This keeps a single night's late hours grouped with the day they belong to rather than split across the calendar boundary. All timestamp ↔ day/hour conversions live in one place (`DayBoundry.kt`) and pivot on this start hour, so changing "Day Starts At" re-lays-out the entire grid consistently.
 
+Day labels follow the same rule. `formatDateLabel(date, today)` adds the year only when the date's year differs from the *logical* today's, and the grid, the note dialogs and the Notes list all call it, so the label you see is also the text search matches.
+
 ### Default schedule auto-fill
 
 When a new logical day first appears, the app seeds that day's *planned* activities from the matching weekday's schedule template. Seeding is **fill-only**: it never overwrites a planned activity you set manually, and a "last seeded day" marker in DataStore ensures each day seeds only once. The seeding logic lives in one place (`Seeding.kt`) and is triggered from two spots: a one-shot seed when the ViewModel starts (covering app launch), and the hourly notification alarm (covering the day boundary while the app is open or in the background). Because the day boundary always falls on a whole hour, the hourly alarm lands exactly on it, so there is no need to poll. Changing "Day Starts At" also re-runs the seed, via a small collector on the setting.
+
+### Moving on after logging
+
+`logPlannedActivity` and `logActualActivity` each write the hour and then call one private function, `nextHourSelection`, which decides whether the cursor moves. It re-reads the row it just saved and moves on only if the hour is *complete*: it has a plan, and either an actual or it's still in the future (future hours can only be planned, so a plan completes them). Judging the stored row rather than the tap that just happened gives both buttons one rule, and an actual-only row (created by a notification tap, say) doesn't advance until a plan arrives.
+
+The cursor also never leaves its logical day: if the next hour's `logicalDateOf` is later than the current hour's, it stays. Comparing logical dates, not calendar dates, matters after midnight, when the calendar says tomorrow but the day you're still logging hasn't ended. It also means the cursor can't step onto a day with no row on screen.
 
 ### Daily synopsis notes
 
@@ -306,6 +329,14 @@ The charts are drawn by hand rather than with a charting library: a donut, a flo
 - **Fading as a layer.** A faded slice is drawn into its own layer and faded as a whole. Each slice is two draw calls, so fading each call separately would double-paint the overlap.
 - **The scrolling line chart** is two canvases: a fixed gutter for the axis labels and a wider plot inside `horizontalScroll`. Both share one y-mapping, so labels stay level with their lines.
 
+### Activity colours and initials
+
+The palette is `LightActivityColours` in `Color.kt`: sixteen ARGB ints, each activity storing its own copy. The list is **append-only**, because the five default activities (first-run seeding and Reset Activities) read it by position. The eight added colours were picked by measurement rather than by eye: each is far enough from the others in CIEDE2000 colour distance to tell apart, and has at least 2:1 contrast against the app's light and dark backgrounds and card fills.
+
+Initials are three small pieces. `initialOf(name)` takes the first *code point* of the trimmed name, upper-cased (an emoji is two `Char`s, and `name.first()` would return half of it); a blank name gives no letter. `inkOn(fill)` picks between two inks, the dark theme's cream text colour and its near-black background, whichever has the higher WCAG contrast on that fill, using `Color.luminance()`. The ink is a fixed pair, not a themed colour, because activity fills look the same in light and dark. `InitialLabel` draws the letter, and both `HourBox` and the editor's swatch use it, so the grid and the editor can't drift apart. A logged hour draws its actual activity's letter on the fill; a plan-only hour draws the planned letter on the empty box.
+
+The switch is `show_initials` in DataStore (default off), passed from `NowWhatScreen` down through `HoursView`, `DaySection` and `PartOfDayRow` to `HourBox`, and from `DefaultScheduleSettingsScreen` the same way. Like the other DataStore settings, it isn't part of the backup file.
+
 ### Theming and dark mode
 
 The app follows the system light/dark setting. Rather than routing every screen through `MaterialTheme.colorScheme`, the handful of UI "chrome" colours (background, text, card fill, borders, cancel grey, danger red) are exposed from `Color.kt` as composable accessors: each name resolves to a light or dark value based on `isSystemInDarkTheme()`, backed by an explicit light/dark value pair.
@@ -357,15 +388,15 @@ Where a rule must hold in both worlds, it's extracted into a plain top-level `su
     - `HoursView`: scrollable `LazyColumn` of days with top/bottom fade effects
       - `DaySection`: header row (date label + optional `noteButton` slot) above four part-of-day rows
         - `PartOfDayRow`: band label + a row of boxes
-          - `HourBox`: one hour. Outline = planned colour, fill = actual colour; rounded corners, shadow when selected; tappable
+          - `HourBox`: one hour. Outline = planned colour, fill = actual colour; rounded corners, shadow when selected; tappable; optionally draws the activity's initial through `InitialLabel` (`ActivityInitial.kt`)
     - `EntryPanel`: pinned bottom panel with right-edge fade effect
       - `PresetButton`: outlined (planned) or filled (actual) button per activity; supports an `enabled` flag
       - `ActivityLegend`: colour → activity key (a single scrolling line here, so the panel's height stays fixed)
   - `NowWhatSettingsScreen`: settings list of `SettingRow`s
     - `SettingRow`: rounded card row with optional `leading` and `content` slots and a trailing slot (chevron / switch / stepper)
     - `NumberStepper`: reusable −/value/+ stepper with a `format` lambda
-    - `ActivitiesSettingsScreen`: each activity as a `SettingRow` with a colour swatch, an inline-rename field and a delete action; keyboard-aware via `imePadding`
-    - `DefaultScheduleSettingsScreen` → `WeekdayPicker` + `DaySection` + preset row
+    - `ActivitiesSettingsScreen`: a pinned **Show Initials** switch above a `LazyColumn` of activities, each a `SettingRow` with a colour swatch (which previews the initial), an inline-rename field and a delete action; the colour picker is a `FlowRow` of sixteen swatches; keyboard-aware via `imePadding`
+    - `DefaultScheduleSettingsScreen` → `WeekdayPicker` + `DaySection` (planned initials included) + preset row
     - `NotesSettingsScreen`: a pinned `SearchField` above a `LazyColumn` of `NoteCard`s, tap to open `NoteDialog`
       - `SearchField`: one-line search box in the card style, with a clear button; knows nothing about notes
     - `StatisticsSettingsScreen`: pinned filter chips (with a fade beneath) above a `LazyColumn` of chart cards
@@ -410,6 +441,7 @@ Scalar settings live in DataStore, not Room:
 | `note_notifications_enabled` | Boolean | true | The daily synopsis reminder |
 | `note_notification_hour` | Int | 21 | When the reminder fires |
 | `sleep_activity_id` | Long | unset | Which activity means sleep on the statistics page |
+| `show_initials` | Boolean | false | Whether the grid shows each activity's first letter |
 
 Supporting UI classes, not persisted:
 - **`HourSlot`** and **`Day`** carry the grid's data.
@@ -435,10 +467,9 @@ They live in `app/src/test/java/com/example/nowwhat/`. `TextSearch.kt` is pure i
 ### Roadmap
 
 - [ ] **Database integrity:** null out an activity's references (logged hours, planned hours, schedule slots) when it's deleted, instead of leaving them pointing at a dead ID; and a unique index on `hour_entries.timestamp`, with a migration that removes any duplicate hours first
-- [ ] More colours for activities, or a toggle that shows each activity's first letter on the main page, so activities sharing a colour can be told apart
 - [ ] **Bug:** settings rows with controls (e.g. Day Starts At, 24-Hour Time) sit taller than the plain rows
-- [ ] Show the year in day labels when it isn't the current one, so the Notes list doesn't read ambiguously once history spans more than a year (e.g. two "Friday · Sep 11" entries)
 - [ ] Merge-style import (currently replace-only); would need activity-ID-collision handling
+- [ ] Add fade for bellow the activities editor show intials toggle 
 
 Placeholder assumptions: the four time bands are fixed 6-hour blocks anchored at the start hour (Morning = start, then +6/+12/+18), and the starter presets are Work, Sleep, Gym, Social, and Dating.
 
@@ -495,5 +526,9 @@ Placeholder assumptions: the four time bands are fixed 6-hour blocks anchored at
 - [x] **V2.1 notification fix:** request Alarms & reminders access on launch (with an explainer), restart the alarm chain when it's granted, and show its status in notification settings, so hourly prompts work on a fresh install
 - [x] **V2.2 notes search:** a pinned search bar on the Notes screen, matching note text and date labels, with highlighted matches and previews that skip ahead to them
 - [x] **V2.2 polish:** a Notification Permission status row that opens system settings; navigation and the notes dialog survive rotation and theme changes; `BootReceiver` renamed `AlarmRescheduleReceiver`
+- [x] **V2.3 cursor advance:** after logging, the selection moves to the next hour once the current hour is complete (planned, and either logged or still in the future), and stays on a day's last hour
+- [x] **V2.3 year in day labels:** `formatDateLabel` adds the year to the grid, note dialogs and Notes list when it isn't the current one, which also makes years searchable
+- [x] **V2.3 activity colours and initials:** the palette grows from eight to sixteen colours (picker as a two-row `FlowRow`), and a **Show Initials** switch, pinned at the top of Edit Activities, prints each activity's first letter on logged and plan-only hours, with the ink (light or dark) chosen by contrast
+- [x] **V2.3 polish:** the day-note dialog, the import confirmation and the Danger Zone confirmations survive rotation and theme changes (Danger Zone rebuilt around a saved key)
 
 </details>

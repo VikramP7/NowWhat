@@ -4,6 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 
 /* ------------------------------------------------------------------
@@ -80,7 +81,18 @@ val Crimson = Color(0xFF5C0029)
 val Jungle = Color(0xFF668F80)
 val Lime = Color(0xFF53DD6C)
 val Purple = Color(0xFF9368B7)
+// Added in V2.3
+val Gold = Color(0xFFD6A51F)
+val Teal = Color(0xFF00B3A4)
+val Indigo = Color(0xFF4B3FCF)
+val Red = Color(0xFFD1263A)
+val Brown = Color(0xFF8C5A3C)
+val Slate = Color(0xFF5C6B7A)
+val Olive = Color(0xFF7F9A1A)
+val Rose = Color(0xFFEE6C8F)
 
+// Order matters: the default activities read this list by index (first-run seeding and
+// Reset Activities), and the picker draws it in this order. Only ever append.
 val LightActivityColours: List<Int> = listOf(
     DeepBlue.toArgb(),
     SkyBlue.toArgb(),
@@ -89,7 +101,15 @@ val LightActivityColours: List<Int> = listOf(
     Crimson.toArgb(),
     Jungle.toArgb(),
     Lime.toArgb(),
-    Purple.toArgb()
+    Purple.toArgb(),
+    Gold.toArgb(),
+    Teal.toArgb(),
+    Indigo.toArgb(),
+    Red.toArgb(),
+    Brown.toArgb(),
+    Slate.toArgb(),
+    Olive.toArgb(),
+    Rose.toArgb()
 )
 
 // How faint a "ghost" bar is: the planned bars in SleepBarChart, the ghost bars and key in
@@ -97,3 +117,16 @@ val LightActivityColours: List<Int> = listOf(
 const val GHOST_ALPHA = 0.28f
 val UnloggedColour = Color(0xFF4A4A4A)
 val OrphanedColour = Color(0xFF6E5A5A)
+
+val InkLight = TextColourDark //Color.White
+val InkDark = BackgroundDark //Color(0xFF1A1A1A)
+// Picks whichever of white or near-black has more contrast on the fill.
+// A plain function (not a composable getter), so it works inside draw scopes too.
+fun inkOn(fill: Color): Color {
+    fun contrast(a: Color, b: Color): Float {
+        val hi = maxOf(a.luminance(), b.luminance())
+        val lo = minOf(a.luminance(), b.luminance())
+        return (hi + 0.05f) / (lo + 0.05f)
+    }
+    return if (contrast(fill, InkLight) >= contrast(fill, InkDark)) InkLight else InkDark
+}

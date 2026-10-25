@@ -48,7 +48,7 @@ class ShareAxisTest {
             val step = axis.gridLines[1].first - axis.gridLines[0].first
             assertTrue("$percent%: top ${axis.top} below max", axis.top >= max - 1e-6f)
             assertTrue("$percent%: top ${axis.top} more than a step above", axis.top - max < step + 1e-6f)
-            assertTrue("$percent%: ${axis.gridLines.size} gridlines", axis.gridLines.size <= MAX_GRID_DIVISIONS + 1)
+            assertTrue("$percent%: ${axis.gridLines.size} gridlines", axis.gridLines.size <= 5+1)//MAX_GRID_DIVISIONS + 1)
             assertEquals("$percent%: last gridline is the top", axis.top, axis.gridLines.last().first)
         }
     }

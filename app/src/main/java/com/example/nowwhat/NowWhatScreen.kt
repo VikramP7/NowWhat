@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -32,6 +31,7 @@ fun NowWhatScreen(
 
     val is24Hour by viewModel.is24Hour.collectAsState()
     val dayStartHour by viewModel.dayStartHour.collectAsState()
+    val showInitials by viewModel.showInitials.collectAsState()
 
     var noteDialogEpochDay by rememberSaveable() { mutableStateOf<Long?>(null) }
     val noteDialogDay = days.find {day -> day.localDate.toEpochDay() == noteDialogEpochDay}
@@ -94,6 +94,7 @@ fun NowWhatScreen(
             days = days,
             is24Hour = is24Hour,
             dayStartHour = dayStartHour,
+            showInitials = showInitials,
             selectedTimestamp = selectedTimestamp,
             onClick = { dayIndex, hourIndex ->
                 viewModel.selectHour(dayIndex, hourIndex)

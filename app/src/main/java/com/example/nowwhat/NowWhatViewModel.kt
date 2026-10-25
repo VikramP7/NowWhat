@@ -186,7 +186,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
             // eg. Morning(6-11), Day(12-17), Evening(18-23), Night(0-5)
             val rows = bandSlice(hourSlots,dayStartHour)
 
-            Day(date = date.format(DateFormatter), hourRows = rows, localDate = date, note = noteMap[date]?.text)
+            Day(date = formatDateLabel(date, today), hourRows = rows, localDate = date, note = noteMap[date]?.text)
         }
     }
 
@@ -200,13 +200,27 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         if (dayIndex in daysList.indices) {
             val day = daysList[dayIndex]
             _selectedTimestamp.value = timestampOf(day.localDate, hourIndex, dayStartHour.value)
-            _selectedIsFuture.value = _selectedTimestamp.value >= defaultTimestamp()
+            updateSelectedIsFuture()
         }
     }
 
-    fun clearSelection() {
-        _selectedTimestamp.value = defaultTimestamp()
-        _selectedIsFuture.value = true
+    fun updateSelectedIsFuture(){
+        _selectedIsFuture.value = _selectedTimestamp.value >= defaultTimestamp()
+    }
+
+    private suspend fun nextHourSelection() {
+        val timestamp = _selectedTimestamp.value
+        val existing = hourEntryDao.getByTimestamp(timestamp)
+        val dayStartHour = settingsStore.dayStartHour.first()
+
+        if (existing?.plannedActivityId != null && (existing.actualActivityId != null || _selectedIsFuture.value)) {
+            val nextTimestamp = timestamp + HOUR_MS
+            if (!logicalDateOf(nextTimestamp, dayStartHour).isAfter(logicalDateOf(timestamp, dayStartHour))){
+                _selectedTimestamp.value = nextTimestamp
+            }
+        }
+        updateSelectedIsFuture()
+
     }
 
     private suspend fun seedToday(){
@@ -232,7 +246,7 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                     HourEntry(timestamp = timestamp, plannedActivityId = activityId, actualActivityId = null)
                 )
             }
-            //clearSelection()
+            nextHourSelection()
         }
     }
 
@@ -248,8 +262,8 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
                         HourEntry(timestamp = timestamp, plannedActivityId = null, actualActivityId = activityId)
                     )
                 }
+                nextHourSelection()
             }
-            //clearSelection()
         }
     }
 
@@ -450,6 +464,12 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
         initialValue = null
     )
 
+    val showInitials = settingsStore.showInitials.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
+    )
+
     /* ---------------------------- SETTINGS FUNCTIONS ----------------------------*/
     fun setIs24Hour(value: Boolean) {
         viewModelScope.launch {
@@ -481,6 +501,12 @@ class NowWhatViewModel(application: Application) : AndroidViewModel(application)
 
     fun setNoteNotificationHour(value: Int){
         viewModelScope.launch { settingsStore.setNoteNotificationHour(value) }
+    }
+
+    fun setShowInitials(value: Boolean) {
+        viewModelScope.launch {
+            settingsStore.setShowInitials(value)
+        }
     }
 
     /* ---------------------------- IMPORT/EXPORT JSON FUNCTIONS ----------------------------*/

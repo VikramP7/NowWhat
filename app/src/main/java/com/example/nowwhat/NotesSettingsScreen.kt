@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -37,6 +36,7 @@ fun NotesSettingsScreen(
     val notes by viewModel.notes.collectAsState()
     var noteDialogDay by rememberSaveable { mutableStateOf<Long?>(null) }
     val noteDialog = notes.find { it.epochDay == noteDialogDay }
+    val dayStartHour by viewModel.dayStartHour.collectAsState()
 
     // The search text. Presentation only, so it lives here rather than in
     // the ViewModel: survives rotation, resets when you leave the screen.
@@ -52,7 +52,7 @@ fun NotesSettingsScreen(
     val shownNotes = if (q.isNotBlank()) {
         notes.filter { note ->
             matchRanges(note.text, q).isNotEmpty() ||
-                    matchRanges(dateLabelOf(note), q).isNotEmpty()
+                    matchRanges(dateLabelOf(note, dayStartHour), q).isNotEmpty()
         }
     }else {
         notes
@@ -107,7 +107,7 @@ fun NotesSettingsScreen(
 
                 items(shownNotes, key = { it.epochDay }) { note ->
                     NoteCard(
-                        dateLabel = highlightMatches(dateLabelOf(note), q, highlight),
+                        dateLabel = highlightMatches(dateLabelOf(note, dayStartHour), q, highlight),
                         text = highlightMatches(searchPreview(note.text, q), q, highlight),
                         onClick = { noteDialogDay = note.epochDay }
                     )
@@ -116,7 +116,7 @@ fun NotesSettingsScreen(
         }
         noteDialog?.let { note ->
             NoteDialog(
-                title = dateLabelOf(note),
+                title = dateLabelOf(note, dayStartHour),
                 initialText = note.text,
                 onSave = { noteText -> viewModel.saveNote(note.epochDay, noteText) },
                 onDismiss = { noteDialogDay = null }
@@ -125,5 +125,9 @@ fun NotesSettingsScreen(
     }
 }
 
-private fun dateLabelOf(note: Note): String =
-    LocalDate.ofEpochDay(note.epochDay).format(DateFormatter)
+private fun dateLabelOf(note: Note, dayStartHour: Int): String {
+    return formatDateLabel(
+        LocalDate.ofEpochDay(note.epochDay),
+        logicalDateOf(System.currentTimeMillis(), dayStartHour)
+    )
+}

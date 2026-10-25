@@ -39,6 +39,7 @@ fun DefaultScheduleSettingsScreen(
     val selectedDay by viewModel.selectedScheduleDay.collectAsState()
     val selectedHour by viewModel.selectedScheduleHour.collectAsState()
     val is24Hour by viewModel.is24Hour.collectAsState()
+    val showInitials by viewModel.showInitials.collectAsState()
     val dayStartHour by viewModel.dayStartHour.collectAsState()
 
     Scaffold(
@@ -67,6 +68,7 @@ fun DefaultScheduleSettingsScreen(
                     .getDisplayName(TextStyle.FULL, Locale.getDefault()),
                 is24Hour = is24Hour,
                 dayStartHour = dayStartHour,
+                showInitials = showInitials,
                 selectedHourOfDay = selectedHour,
                 onClick = { hour -> viewModel.setSelectedScheduleHour(hour) }
             )

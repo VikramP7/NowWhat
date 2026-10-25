@@ -25,6 +25,7 @@ class SettingsStore(private val context: Context) {
         val NOTE_NOTIFICATION_ENABLED = booleanPreferencesKey("note_notifications_enabled")
         val NOTE_NOTIFICATION_HOUR = intPreferencesKey("note_notification_hour")
         val SLEEP_ACTIVITY_ID = longPreferencesKey("sleep_activity_id")
+        val SHOW_INITIALS = booleanPreferencesKey("show_initials")
     }
 
     //READ
@@ -62,6 +63,10 @@ class SettingsStore(private val context: Context) {
 
     val sleepActivityId: Flow<Long?> = context.dataStore.data.map { prefs ->
         prefs[Keys.SLEEP_ACTIVITY_ID]
+    }
+
+    val showInitials: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.SHOW_INITIALS] ?: false
     }
 
     // WRITE
@@ -122,6 +127,12 @@ class SettingsStore(private val context: Context) {
     suspend fun clearSleepActivityId(){
         context.dataStore.edit { prefs ->
             prefs.remove(Keys.SLEEP_ACTIVITY_ID)
+        }
+    }
+
+    suspend fun setShowInitials(value: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SHOW_INITIALS] = value
         }
     }
 }

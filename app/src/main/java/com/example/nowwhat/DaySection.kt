@@ -19,6 +19,7 @@ fun DaySection(
     dateLabel: String,
     is24Hour: Boolean,
     dayStartHour: Int,
+    showInitials: Boolean,
     onClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
     noteButton: (@Composable () -> Unit)? = null,
@@ -55,6 +56,7 @@ fun DaySection(
                     label = dayPartLabels[index],
                     hourSlots = row,
                     selectedHourInRow = selectedInRow,
+                    showInitials = showInitials,
                     onClick = { hourInRow -> onClick(clockHourOf(index * BAND_HOURS + hourInRow, dayStartHour)) }
                 )
             }

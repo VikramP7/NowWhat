@@ -4,7 +4,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlin.math.floor
 import kotlin.math.roundToInt
 
 // A NowWhat "day" runs dayStartHour → dayStartHour-1min next calendar day,
@@ -58,6 +57,13 @@ fun weekStartOf(date: LocalDate): LocalDate{
 }
 
 val DateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE · MMM d")
+val DateFormatterWithYear: DateTimeFormatter = DateTimeFormatter.ofPattern("EEEE · MMM d · yyyy")
+
+fun formatDateLabel(date: LocalDate, today: LocalDate): String {
+    val dateLabelFormat = if (date.year != today.year) DateFormatterWithYear else DateFormatter
+    return date.format(dateLabelFormat)
+}
+
 fun formatHourLabel(hour: Int, is24Hour: Boolean): String {
     return formatClockLabel(hour*60, is24Hour)
 }

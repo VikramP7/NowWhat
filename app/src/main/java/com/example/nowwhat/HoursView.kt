@@ -28,6 +28,7 @@ fun HoursView(
     days: List<Day>,
     is24Hour: Boolean,
     dayStartHour: Int,
+    showInitials: Boolean,
     onClick: (dayIndex: Int, hourIndex: Int) -> Unit,
     onNoteClick: (Day) -> Unit,
     modifier: Modifier = Modifier,
@@ -58,6 +59,7 @@ fun HoursView(
                     dateLabel = day.date,
                     is24Hour = is24Hour,
                     dayStartHour = dayStartHour,
+                    showInitials = showInitials,
                     selectedHourOfDay = if (day.localDate == selectedDate) selectedHour else null,
                     onClick = { hourIndex -> onClick(dayIndex, hourIndex) },
                     noteButton = {

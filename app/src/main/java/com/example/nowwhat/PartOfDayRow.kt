@@ -19,6 +19,7 @@ import com.example.nowwhat.ui.theme.TextColour
 fun PartOfDayRow(
     hourSlots: List<HourSlot?>,
     label: String,
+    showInitials: Boolean,
     onClick: (Int) -> Unit, // callback
     modifier: Modifier = Modifier,
     selectedHourInRow: Int? = null
@@ -41,7 +42,8 @@ fun PartOfDayRow(
             HourBox(
                 hourSlot = hourSlot,
                 isSelected = (selectedHourInRow == index),
-                onClick = { onClick(index) }
+                onClick = { onClick(index) },
+                showInitial = showInitials,
             )
         }
     }
@@ -59,7 +61,7 @@ fun PartOfDayRowPreview() {
     val testHour3 = HourSlot()
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        PartOfDayRow(label = "Morning", hourSlots = listOf(testHour0, testHour1, testHour2, testHour3, testHour0, testHour2), selectedHourInRow = 2, onClick = {})
-        PartOfDayRow(label = "Day", hourSlots = listOf(testHour1, testHour2, testHour3, testHour0, testHour2, testHour0), onClick = {})
+        PartOfDayRow(label = "Morning", showInitials = false, hourSlots = listOf(testHour0, testHour1, testHour2, testHour3, testHour0, testHour2), selectedHourInRow = 2, onClick = {})
+        PartOfDayRow(label = "Day", showInitials = true, hourSlots = listOf(testHour1, testHour2, testHour3, testHour0, testHour2, testHour0), onClick = {})
     }
 }
